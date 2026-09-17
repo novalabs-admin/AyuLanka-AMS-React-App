@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx'; // For Excel export
 import './staffWiseTreatmentSummaryReport.css';
-import { fetchAppointmentsByDateRange } from '../../../services/appointmentSchedulerApi';
+import { fetchAllAppointmentsByDateRange } from '../../../services/appointmentSchedulerApi';
+import SkeletonTable from '../../common/SkeletonTable';
+import EmptyState from '../../common/EmptyState';
 
 const StaffWiseTreatmentSummaryReport = () => {
     const [appointments, setAppointments] = useState([]);
@@ -11,6 +13,8 @@ const StaffWiseTreatmentSummaryReport = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [treatmentAppointments, setTreatmentAppointments] = useState([]);
     const [treatmentNames, setTreatmentNames] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [fetched, setFetched] = useState(false);
 
     // Generate an array of dates between start and end dates
     const generateDateRange = (start, end) => {
@@ -24,10 +28,12 @@ const StaffWiseTreatmentSummaryReport = () => {
     };
 
     const fetchAppointments = async () => {
+        setLoading(true);
+        setFetched(false);
         try {
             const start = new Date(startDate);
             const end = new Date(endDate);
-            const data = await fetchAppointmentsByDateRange(start, end);
+            const data = await fetchAllAppointmentsByDateRange(start, end);
 
             const employeeData = {};
             const treatmentNamesSet = new Set(); // To store unique treatment names
@@ -112,6 +118,9 @@ const StaffWiseTreatmentSummaryReport = () => {
             setTreatmentAppointments(mappedAppointments); // Set the grouped data
         } catch (error) {
             console.error('Error fetching appointments data:', error);
+        } finally {
+            setLoading(false);
+            setFetched(true);
         }
     };
 
@@ -173,7 +182,7 @@ const StaffWiseTreatmentSummaryReport = () => {
 
     return (
         <div style={{ marginRight: '4%' }}>
-            <h2 className="report-heading">Staff Wise Appointment Summary Report</h2>
+            <h2 className="report-heading">Staff Wise Treatment Summary Report</h2>
             <div className="report-filter">
                 <div className="row">
                     <div className="col-md-2">
@@ -216,40 +225,54 @@ const StaffWiseTreatmentSummaryReport = () => {
                 </div>
             </div>
 
+            {loading && <SkeletonTable rows={5} cols={6} />}
+
+            {!loading && fetched && treatmentAppointments.length === 0 && (
+                <EmptyState title="No treatment data for this period"
+                    message="No appointments found in the selected date range." />
+            )}
+
+            {!loading && treatmentAppointments.length > 0 && (
             <div className="scrollable-table-container">
                 <table className="report-table">
                     <thead>
                         <tr>
-                            <th rowSpan="2">Employee Name</th>
+                            <th>Employee Name</th>
                             {treatmentNames.map(treatmentName => (
-                                <React.Fragment key={treatmentName}>
-                                    <th key={treatmentName}>{treatmentName}</th>
-                                </React.Fragment>
+                                <th key={treatmentName}>{treatmentName}</th>
                             ))}
+                            <th>Total</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {treatmentAppointments.length > 0 && treatmentAppointments.map(appointment => (
+                        {treatmentAppointments.map(appointment => (
                             <tr key={appointment.employeeId}>
                                 <td>{appointment.callingName}</td>
                                 {treatmentNames.map(treatmentName => (
-                                    <td key={treatmentName}>
-                                        {appointment[treatmentName] || 0} {/* Display treatment count */}
-                                    </td>
+                                    <td key={treatmentName}>{appointment[treatmentName] || 0}</td>
                                 ))}
+                                <td><strong>{treatmentNames.reduce((s, t) => s + (appointment[t] || 0), 0)}</strong></td>
                             </tr>
                         ))}
                     </tbody>
+                    <tfoot>
+                        <tr className="table-total-row">
+                            <td><strong>Total</strong></td>
+                            {treatmentNames.map(t => (
+                                <td key={t}><strong>{treatmentAppointments.reduce((s, a) => s + (a[t] || 0), 0)}</strong></td>
+                            ))}
+                            <td><strong>{treatmentAppointments.reduce((s, a) =>
+                                s + treatmentNames.reduce((ts, t) => ts + (a[t] || 0), 0), 0)}</strong></td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
-
+            )}
 
             <br /><br />
-            {/* Print and Download Buttons */}
-            <div className="report-buttons">
-                <button className="report-button" onClick={exportToExcel}>
-                    Download as Excel
-                </button>
+            <div className="report-buttons no-print">
+                <button className="report-button" onClick={window.print}>Print</button>
+                <button className="report-button" onClick={exportToExcel}>Download as Excel</button>
             </div>
         </div>
     );

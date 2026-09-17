@@ -1,0 +1,59 @@
+.doctor-session-container {
+  padding: 24px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.doctor-session-container h2 {
+  margin-bottom: 24px;
+  color: #2c3e50;
+}
+
+.session-form-card {
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.session-form-card h5 {
+  margin-bottom: 16px;
+  color: #495057;
+}
+
+.session-form-card .form-label {
+  font-weight: 500;
+}
+
+.session-table-card {
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.session-table-card h5 {
+  margin-bottom: 16px;
+  color: #495057;
+}
+
+.session-table-card table {
+  font-size: 0.9rem;
+}
+
+.badge-full {
+  background-color: #dc3545;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.badge-available {
+  background-color: #198754;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}

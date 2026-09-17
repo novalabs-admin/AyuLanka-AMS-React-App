@@ -14,7 +14,9 @@ const api = axios.create({
 // Fetch Employees
 export const fetchEmployees = async () => {
   try {
-    const response = await api.get("/employee");
+    const companyId = sessionStorage.getItem("companyId");
+    const params = companyId ? { companyId } : {};
+    const response = await api.get("/employee", { params });
     return response.data;
   } catch (error) {
     console.error("Error fetching employees:", error);
@@ -25,7 +27,9 @@ export const fetchEmployees = async () => {
 // Fetch Leave Types
 export const fetchLeaveApplications = async () => {
   try {
-    const response = await api.get("/staffleave");
+    const companyId = sessionStorage.getItem("companyId");
+    const params = companyId ? { companyId } : {};
+    const response = await api.get("/staffleave", { params });
     console.log(response)
     return response.data;
   } catch (error) {

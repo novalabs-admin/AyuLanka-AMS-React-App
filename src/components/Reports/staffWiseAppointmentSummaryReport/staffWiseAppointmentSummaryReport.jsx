@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx'; // For Excel export
 import './staffWiseAppointmentSummaryReport.css';
-import { fetchAppointmentsByDateRange } from '../../../services/appointmentSchedulerApi';
+import { fetchAllAppointmentsByDateRange } from '../../../services/appointmentSchedulerApi';
+import SkeletonTable from '../../common/SkeletonTable';
+import EmptyState from '../../common/EmptyState';
 
 const StaffWiseAppointmentSummaryReport = () => {
     const [appointments, setAppointments] = useState([]);
@@ -9,6 +11,8 @@ const StaffWiseAppointmentSummaryReport = () => {
     const [endDate, setEndDate] = useState('');
     const [dateRange, setDateRange] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [fetched, setFetched] = useState(false);
   
     // Generate an array of dates between start and end dates
     const generateDateRange = (start, end) => {
@@ -53,10 +57,12 @@ const formatDuration = (minutes) => {
 };
 
 const fetchAppointments = async () => {
+    setLoading(true);
+    setFetched(false);
     try {
         const start = new Date(startDate); // Convert to Date object
         const end = new Date(endDate);     // Convert to Date object
-        const data = await fetchAppointmentsByDateRange(start, end);
+        const data = await fetchAllAppointmentsByDateRange(start, end);
 
         const employeeData = {};
         
@@ -158,6 +164,9 @@ const fetchAppointments = async () => {
         setDateRange(generateDateRange(startDate, endDate)); // Set the date range for table headers
     } catch (error) {
         console.error('Error fetching appointments data:', error);
+    } finally {
+        setLoading(false);
+        setFetched(true);
     }
 };
 
@@ -269,6 +278,14 @@ const exportToExcel = () => {
                 </div>
             </div>
 
+            {loading && <SkeletonTable rows={5} cols={7} />}
+
+            {!loading && fetched && filteredAppointments.length === 0 && (
+                <EmptyState title="No staff data for this period"
+                    message="No appointments found in the selected date range." />
+            )}
+
+            {!loading && filteredAppointments.length > 0 && (
             <div className="scrollable-table-container">
                 <table className="report-table">
                     <thead>
@@ -282,18 +299,18 @@ const exportToExcel = () => {
                         <tr>
                             {dateRange.map(date => (
                                 <React.Fragment key={date}>
-                                    <th key={`${date}-appointments`}>Appointment Count</th>
+                                    <th key={`${date}-appointments`}>Appt Count</th>
                                     <th key={`${date}-treatments`}>Treatment Count</th>
                                     <th key={`${date}-duration`}>Duration</th>
                                 </React.Fragment>
                             ))}
-                            <th>Appointment Count</th>
+                            <th>Appt Count</th>
                             <th>Treatments Count</th>
                             <th>Duration</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredAppointments.length > 0 && filteredAppointments.map(appointment => (
+                        {filteredAppointments.map(appointment => (
                             <tr key={appointment.employeeId}>
                                 <td>{appointment.callingName}</td>
                                 {dateRange.map(date => (
@@ -309,15 +326,29 @@ const exportToExcel = () => {
                             </tr>
                         ))}
                     </tbody>
+                    <tfoot>
+                        <tr className="table-total-row">
+                            <td><strong>Total</strong></td>
+                            {dateRange.map(date => (
+                                <React.Fragment key={date}>
+                                    <td><strong>{filteredAppointments.reduce((s,a) => s + (a[date]?.appointmentCount||0), 0)}</strong></td>
+                                    <td><strong>{filteredAppointments.reduce((s,a) => s + (a[date]?.treatmentCount||0), 0)}</strong></td>
+                                    <td>—</td>
+                                </React.Fragment>
+                            ))}
+                            <td><strong>{filteredAppointments.reduce((s,a) => s + (a.summary.appointmentCount||0), 0)}</strong></td>
+                            <td><strong>{filteredAppointments.reduce((s,a) => s + (a.summary.treatmentCount||0), 0)}</strong></td>
+                            <td>—</td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
+            )}
 
             <br/><br/>
-            {/* Print and Download Buttons */}
-            <div className="report-buttons">
-                <button className="report-button" onClick={exportToExcel}>
-                    Download as Excel
-                </button>
+            <div className="report-buttons no-print">
+                <button className="report-button" onClick={window.print}>Print</button>
+                <button className="report-button" onClick={exportToExcel}>Download as Excel</button>
             </div>
         </div>
     );

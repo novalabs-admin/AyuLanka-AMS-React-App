@@ -2,19 +2,25 @@ import React, { useState } from 'react';
 import * as XLSX from 'xlsx'; // Import XLSX library
 import './deletedAppointmentReport.css';
 import { fetchDeletedAppoitmentByDate } from '../../../services/appointmentSchedulerApi';
+import SkeletonTable from '../../common/SkeletonTable';
+import EmptyState from '../../common/EmptyState';
 
 const DeletedAppointmentReport = () => {
     const [appointments, setAppointments] = useState([]);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [fetched, setFetched] = useState(false);
 
     const fetchAppointments = async () => {
+        if (!startDate || !endDate) {
+            alert('Please select both start and end dates.');
+            return;
+        }
+        setLoading(true);
+        setFetched(false);
         try {
-            if (!startDate || !endDate) {
-                alert('Please select both start and end dates.');
-                return;
-            }
             const data = await fetchDeletedAppoitmentByDate(startDate, endDate);
 
             const sortedData = data.sort((a, b) => {
@@ -27,6 +33,9 @@ const DeletedAppointmentReport = () => {
             setAppointments(sortedData);
         } catch (error) {
             console.error('Error fetching day offs data:', error);
+        } finally {
+            setLoading(false);
+            setFetched(true);
         }
     };
 
@@ -226,8 +235,12 @@ const DeletedAppointmentReport = () => {
                 </div>
             </div>
 
-            {/* Scrollable Appointment Report Table */}
-            <div className="scrollable-table-container">
+            {loading && <SkeletonTable rows={6} cols={9} />}
+            {!loading && fetched && filteredAppointments.length === 0 && (
+                <EmptyState title="No deleted appointments found"
+                    message="No deleted appointments match the selected filters." />
+            )}
+            {!loading && filteredAppointments.length > 0 && <div className="scrollable-table-container">
                 <table className="report-table">
                     <thead>
                         <tr>
@@ -260,7 +273,7 @@ const DeletedAppointmentReport = () => {
                         ))}
                     </tbody>
                 </table>
-            </div>
+            </div>}
             <br /><br />
             {/* Print and Download Buttons */}
             <div className="report-buttons">

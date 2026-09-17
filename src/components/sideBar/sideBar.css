@@ -18,10 +18,56 @@
     overflow-y: auto; /* Enables vertical scrolling */
 }
 
-.sidebar h2 {
-    margin-bottom: 30px;
-    font-size: 24px;
-    font-weight: bold;
+/* Brand block at top of sidebar */
+.sidebar-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 12px 12px;
+    width: 100%;
+}
+
+.sidebar-logo {
+    width: 110px;
+    height: auto;
+    margin-bottom: 10px;
+    border-radius: 6px;
+}
+
+.sidebar-brand-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+}
+
+.sidebar-company-badge {
+    background-color: #28a745;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 12px;
+}
+
+.sidebar-username {
+    color: #bdc3c7;
+    font-size: 13px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 220px;
+}
+
+.sidebar-divider {
+    width: 85%;
+    height: 1px;
+    background-color: #3d5166;
+    margin: 10px 0 8px;
 }
 
 .sidebar ul {
@@ -46,7 +92,16 @@
 
 .sidebar ul li a:hover, .sidebar ul li span:hover {
     background-color: #34495e;
-    color: #1abc9c;
+    color: #28a745;
+}
+
+/* Active (current page) link highlight */
+.sidebar ul li a.active-link,
+.sidebar ul li a.active-link:hover {
+    background-color: #28a745;
+    color: #fff;
+    font-weight: 600;
+    border-left: 4px solid #fff;
 }
 
 .sidebar ul li ul {

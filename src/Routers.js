@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from "react-route
 
 import Login from "./components/login";
 import Sidebar from "./components/sideBar/sideBar";
+import Breadcrumb from "./components/breadcrumb/Breadcrumb";
 import User from "./components/user/user";
 import ApplyLeave from "./components/leave/applyLeave";
 import EmployeeRoster from "./components/employeeRoster/employeeRoster";
@@ -28,6 +29,9 @@ import UnlinkedAppointmentReport from "./components/Reports/unlinkedAppointmentR
 import Dashboard from "./components/dashboard/dashboardCharts";
 import { Home } from "@mui/icons-material";
 import CustomerProfile from "./components/customerProfile/customerProfile";
+import DoctorSessionManager from "./components/doctorSessionManager/doctorSessionManager";
+import ChannelingAppointment from "./components/channelingAppointment/channelingAppointment";
+import AppointmentSchedulerDoctorChanneling from "./components/appointmentSchedulerDoctorChanneling/appointmentSchedulerDoctorChanneling";
 
 const Layout = ({ children }) => {
   const location = useLocation();
@@ -37,6 +41,7 @@ const Layout = ({ children }) => {
     <div className="app-container">
       {!isLoginPage && <Sidebar />}
       <div className={`main-content ${isLoginPage ? 'full-width' : ''}`}>
+        {!isLoginPage && <Breadcrumb />}
         {children}
       </div>
     </div>
@@ -59,6 +64,7 @@ const Routers = () => {
         <Route path="/token-dashboard" element={<TokenDashboard />} />
         <Route path="/appoinment-schedular-elitecare" element={<AppointmentScheduler />} />
         <Route path="/appoinment-schedular-primecare" element={<AppointmentSchedulerPrimeCare />} />
+        <Route path="/appoinment-schedular-doctorechanneling" element={<AppointmentSchedulerDoctorChanneling />} />
         <Route path="/update-roster" element={<UpdateRoster />} />
         <Route path="/approve-roster" element={<ApproveRoster />} />
         <Route path="/view-roster" element={<ViewRoster />} />
@@ -72,6 +78,8 @@ const Routers = () => {
         <Route path="/staff-appointment-summary-report" element={<StaffWiseAppointmentSummaryReport />} />
         <Route path="/staff-treatment-summary-report" element={<StaffWiseTreatmentSummaryReport />} />
         <Route path="/appointment-completion-rate-report" element={<AppointmentCompletionRateReport />} />
+        <Route path="/doctor-sessions" element={<DoctorSessionManager />} />
+        <Route path="/channeling" element={<ChannelingAppointment />} />
         <Route path="/logout" element={<Logout />} />
       </Routes>
     </Layout>

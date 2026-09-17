@@ -11,6 +11,16 @@ const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
+export const fetchCompanies = async () => {
+  try {
+    const response = await api.get("/company");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching companies:", error);
+    throw error;
+  }
+};
+
 export const fetchShiftMasters = async () => {
   
   try {
@@ -54,9 +64,16 @@ export const login_api = async (formData) => {
 };
 
 // User APIs
+export const resetUserPassword = async (userId, newPassword) => {
+  const response = await api.patch(`/employee/${userId}/reset-password`, { newPassword });
+  return response.data;
+};
+
 export const fetchUsers = async () => {
   try {
-    const response = await api.get("/employee");
+    const companyId = sessionStorage.getItem("companyId");
+    const params = companyId ? { companyId } : {};
+    const response = await api.get("/employee", { params });
     return response.data;
   } catch (error) {
     console.error("Error fetching users:", error);

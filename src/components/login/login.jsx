@@ -2,8 +2,6 @@ import React from "react";
 import logoImage from "../../assets/images/ayu_lanka_logo.png"; // Update the logo to a hospital logo
 import "./login.css";
 import ToastMessage from "../toastMessage/toastMessage.js";
-import { Navigate } from "react-router-dom";
-
 function template() {
   return (
     <div className="container-wrapper-login">
@@ -21,13 +19,6 @@ function template() {
         type="success"
         message={this.state.successMessageToast}
       />
-      {this.state.redirectToMain ? (
-          this.state.isExecutiveDashboard ? (
-              <Navigate to="/dashboard" replace={true} />
-          ) : (
-              <Navigate to="/home" replace={true} />
-          )
-      ) : null}
       <div className="container container-main">
         <div className="row">
           <div className="col-lg-8">

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Form, ListGroup, Spinner, Card, Row, Col } from 'react-bootstrap';
 import { fetchCustomerProfile, searchPatients } from '../../services/appointmentSchedulerApi';
+import SkeletonTable from '../common/SkeletonTable';
+import EmptyState from '../common/EmptyState';
 
 const CustomerProfilePage = ({ customerId, show, onClose }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -138,8 +140,11 @@ const CustomerProfilePage = ({ customerId, show, onClose }) => {
       )}
 
       {/* Appointment Table */}
-      {loadingProfile && <div className="text-center my-3"><Spinner animation="border" /></div>}
-      {appointments.length > 0 && (
+      {loadingProfile && <SkeletonTable rows={4} cols={6} />}
+      {!loadingProfile && selectedCustomer && appointments.length === 0 && (
+        <EmptyState title="No appointment history" message="This customer has no recorded appointments." />
+      )}
+      {!loadingProfile && appointments.length > 0 && (
         <div className="table-responsive shadow-sm">
           <table className="table table-bordered table-striped table-hover">
             <thead className="table-dark">
@@ -155,7 +160,7 @@ const CustomerProfilePage = ({ customerId, show, onClose }) => {
             <tbody>
               {appointments.map((appt, idx) => (
                 <tr key={idx}>
-                  <td>{new Date(appt.scheduleDate).toISOString().substring(0, 10)}</td>
+                  <td>{appt.scheduleDate?.substring(0, 10)}</td>
                   <td>{appt.appointmentTreatments.map(t => t.treatmentType.name).join(", ")}</td>
                   <td>{appt.employee?.username || ""}</td>
                   <td>{appt.location?.name || ""}</td>

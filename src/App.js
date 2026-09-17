@@ -1,10 +1,11 @@
 import Routers from './Routers';
 import './App.css';
+import './global.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import 'bootstrap-icons/font/bootstrap-icons.css';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { BrowserRouter as Router } from 'react-router-dom'; // Import Router here
 import SessionHandler from './services/sessionHandler';
 import ToastMessage from './components/toastMessage/toastMessage';
@@ -16,17 +17,16 @@ function App() {
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('success');
 
-  const handleShowToast = (message, type = 'success', show) => {
-    console.log("Showing toast:", message, type); // Debugging
+  // Memoize so SessionHandler's useEffect doesn't re-run on every App render
+  const handleShowToast = useCallback((message, type = 'success', show) => {
     setToastMessage(message);
     setToastType(type);
     setShowToast(show);
-  };
+  }, []);
 
-  const handleCloseToast = () => {
-    console.log("Toast is being closed"); // Debugging
+  const handleCloseToast = useCallback(() => {
     setShowToast(false);
-  };
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

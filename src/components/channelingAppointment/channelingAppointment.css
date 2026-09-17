@@ -1,0 +1,198 @@
+.channeling-container {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.channeling-container h2 {
+  margin-bottom: 24px;
+  color: #2c3e50;
+}
+
+.token-header {
+  font-size: 24px;
+  color: #16A085;
+  text-align: left;
+  padding: 10px 0;
+  border-bottom: 3px solid #BDC3C7;
+  padding-top: 0 !important;
+}
+
+.session-card {
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  padding: 16px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  margin-bottom: 12px;
+}
+
+.session-card:hover {
+  border-color: #0d6efd;
+  background: #f0f7ff;
+}
+
+.session-card.selected {
+  border-color: #0d6efd;
+  background: #e8f1ff;
+}
+
+.session-card.full {
+  border-color: #dc3545;
+  background: #fff5f5;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.session-card.inactive {
+  border-color: #adb5bd;
+  background: #f8f9fa;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.session-card .doctor-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #2c3e50;
+}
+
+.session-card .session-time {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.availability-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: #e9ecef;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.availability-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: #198754;
+  transition: width 0.3s;
+}
+
+.availability-fill.almost-full {
+  background: #ffc107;
+}
+
+.availability-fill.full {
+  background: #dc3545;
+}
+
+.booking-panel {
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.booking-panel h5 {
+  margin-bottom: 16px;
+  color: #495057;
+}
+
+.booked-list {
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 24px;
+}
+
+.booked-list h5 {
+  margin-bottom: 12px;
+  color: #495057;
+}
+
+/* ── Modal styles (mirrors TokenGenerate.css) ── */
+.Modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 800px;
+  width: 100%;
+  background: white;
+  border-radius: 5px;
+  overflow: hidden;
+  z-index: 1050;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+}
+
+.Overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  z-index: 1040;
+}
+
+.modal-content {
+  padding: 10px;
+  max-height: 650px;
+  overflow-y: scroll;
+}
+
+.modal-header {
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 0.5rem;
+}
+
+.modal-title-appointment {
+  font-size: 1.4rem !important;
+}
+
+.modal-appoinment-body {
+  max-height: 75vh !important;
+  text-align: left !important;
+  margin-top: 20px !important;
+  margin-bottom: 40px !important;
+}
+
+.modal-body input,
+.modal-body select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.custom-modal-footer {
+  padding: 10px 20px;
+  border-top: 1px solid #dee2e6;
+  background-color: #f8f9fa;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.close {
+  font-size: 1rem;
+  color: red;
+  font-weight: bold;
+  cursor: pointer;
+  background-color: transparent;
+}
+
+@keyframes spin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.spinner-border {
+  border-top-color: #28a745 !important;
+  border-right-color: #c8e6c9 !important;
+  border-bottom-color: #dee2e6 !important;
+  border-left-color: #28a745 !important;
+  border-style: solid;
+  border-radius: 50%;
+}

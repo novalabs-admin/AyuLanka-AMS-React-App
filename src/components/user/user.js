@@ -1,16 +1,21 @@
 import React from "react";
 import UserTemplate from "./user.jsx";
 import "./user.css";
-import { fetchUsers, createUser, updateUser, fetchShiftMasters, fetchDesignations, fetchEmploymentTypes } from "../../services/userManagementApi.js"; // Adjust the path as necessary
+import { fetchUsers, createUser, updateUser, fetchShiftMasters, fetchDesignations, fetchEmploymentTypes, fetchCompanies, resetUserPassword } from "../../services/userManagementApi.js"; // Adjust the path as necessary
 
 class User extends React.Component {
   constructor(props) {
     super(props);
+    const sessionCompanyId = sessionStorage.getItem("companyId") || "";
+    const designationCode = sessionStorage.getItem("designationCode") || "";
     this.state = {
       users: [],
       shiftMasters: [],
       employmentTypes: [],
       designations: [],
+      companies: [],
+      isSuperAdmin: designationCode === "SAD",
+      sessionCompanyId,
       currentUser: {
         id: null,
         fullName: "",
@@ -24,11 +29,20 @@ class User extends React.Component {
         designationId: "",
         username: "",
         password: "",
+        companyId: sessionCompanyId,
       },
       isEditing: false,
       successModalOpen: false,
       errorModalOpen: false,
       submitAttempted: false,
+      // two-step reset: confirm first, then enter new password
+      confirmResetOpen: false,
+      confirmResetUser: null,
+      resetPasswordModalOpen: false,
+      resetPasswordUserId: null,
+      resetPasswordUserName: "",
+      newPassword: "",
+      resetPasswordError: "",
     };
   }
 
@@ -53,12 +67,19 @@ class User extends React.Component {
     this.fetchShiftMasters();
     this.fetchEmploymentTypes();
     this.fetchDesignations();
+    this.fetchCompanies();
   }
 
   fetchUsers = () => {
     fetchUsers()
       .then((data) => this.setState({ users: data }))
       .catch((error) => console.error("Error fetching users:", error));
+  };
+
+  fetchCompanies = () => {
+    fetchCompanies()
+      .then((data) => this.setState({ companies: data }))
+      .catch((error) => console.error("Error fetching companies:", error));
   };
 
   fetchShiftMasters = () => {
@@ -77,12 +98,6 @@ class User extends React.Component {
     fetchDesignations()
       .then((data) => this.setState({ designations: data }))
       .catch((error) => console.error("Error fetching designations:", error));
-  };
-
-  fetchUsers = () => {
-    fetchUsers()
-      .then((data) => this.setState({ users: data }))
-      .catch((error) => console.error("Error fetching users:", error));
   };
 
   handleInputChange = (event) => {
@@ -159,13 +174,65 @@ class User extends React.Component {
       });
   };
 
+  // Step 1: user clicks "Reset Password" → show confirm dialog
+  requestResetPassword = (user) => {
+    this.setState({ confirmResetOpen: true, confirmResetUser: user });
+  };
+
+  // Step 1 confirmed → close confirm, open password input modal
+  onConfirmResetYes = () => {
+    const user = this.state.confirmResetUser;
+    this.setState({
+      confirmResetOpen: false,
+      confirmResetUser: null,
+      resetPasswordModalOpen: true,
+      resetPasswordUserId: user.id,
+      resetPasswordUserName: user.callingName || user.fullName,
+      newPassword: "",
+      resetPasswordError: "",
+    });
+  };
+
+  onConfirmResetNo = () => {
+    this.setState({ confirmResetOpen: false, confirmResetUser: null });
+  };
+
+  openResetPassword = (user) => {
+    this.setState({
+      resetPasswordModalOpen: true,
+      resetPasswordUserId: user.id,
+      resetPasswordUserName: user.callingName || user.fullName,
+      newPassword: "",
+      resetPasswordError: "",
+    });
+  };
+
+  closeResetPassword = () => {
+    this.setState({ resetPasswordModalOpen: false, resetPasswordUserId: null, newPassword: "", resetPasswordError: "" });
+  };
+
+  handleResetPasswordSubmit = async () => {
+    const { resetPasswordUserId, newPassword } = this.state;
+    if (!newPassword || newPassword.length < 6) {
+      this.setState({ resetPasswordError: "Password must be at least 6 characters." });
+      return;
+    }
+    try {
+      await resetUserPassword(resetPasswordUserId, newPassword);
+      this.setState({ resetPasswordModalOpen: false, resetPasswordUserId: null, newPassword: "", resetPasswordError: "", successModalOpen: true });
+    } catch (err) {
+      this.setState({ resetPasswordError: "Failed to reset password. Please try again." });
+    }
+  };
+
   editUser = (user) => {
     const formattedDate = user.joinedDate ? new Date(user.joinedDate).toISOString().split('T')[0] : '';
     this.setState({
       currentUser: {
         ...user,
         password: '',
-        joinedDate: formattedDate, // Ensure the date is formatted as 'YYYY-MM-DD'
+        joinedDate: formattedDate,
+        companyId: user.companyId ?? this.state.sessionCompanyId,
       },
       isEditing: true,
     });
@@ -185,11 +252,26 @@ class User extends React.Component {
         shiftMasters={this.state.shiftMasters}
         employmentTypes={this.state.employmentTypes}
         designations={this.state.designations}
+        companies={this.state.companies}
+        isSuperAdmin={this.state.isSuperAdmin}
         successModalOpen={this.state.successModalOpen}
         handleSuccessClose={this.handleSuccessClose}
         errorModalOpen={this.state.errorModalOpen}
         handleErrorClose={this.handleErrorClose}
         submitAttempted={this.state.submitAttempted}
+        resetPasswordModalOpen={this.state.resetPasswordModalOpen}
+        resetPasswordUserName={this.state.resetPasswordUserName}
+        newPassword={this.state.newPassword}
+        resetPasswordError={this.state.resetPasswordError}
+        onNewPasswordChange={(val) => this.setState({ newPassword: val })}
+        openResetPassword={this.openResetPassword}
+        closeResetPassword={this.closeResetPassword}
+        handleResetPasswordSubmit={this.handleResetPasswordSubmit}
+        confirmResetOpen={this.state.confirmResetOpen}
+        confirmResetUser={this.state.confirmResetUser}
+        requestResetPassword={this.requestResetPassword}
+        onConfirmResetYes={this.onConfirmResetYes}
+        onConfirmResetNo={this.onConfirmResetNo}
       />
     );
   }

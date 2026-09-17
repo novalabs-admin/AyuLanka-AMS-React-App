@@ -110,7 +110,7 @@ function TokenGenerate() {
 
     // Read values from env
     const rows = Number(process.env.REACT_APP_TOTAL_ROWS) || 17;
-    const cols = Number(process.env.REACT_APP_TOKENS_PER_ROW) || 8;
+    const cols = Number(process.env.REACT_APP_TOKENS_PER_ROW) || 10;
     const startHour = Number(process.env.REACT_APP_APPOINTMENT_START_HOUR) || 7; // 7 AM
     const totalTokens = rows * cols;
 
@@ -119,7 +119,7 @@ function TokenGenerate() {
             try {
                 setLoadingTokens(true);
                 const tokens = await fetchTokensByDate(selectedDate);
-                setBookedTokens(tokens)
+                setBookedTokens(tokens.filter(t => t.doctorSessionId === null))
                 console.log("tokens:", tokens);
                 // setState(appointments) if you want to store them
             } catch (err) {
@@ -216,8 +216,9 @@ function TokenGenerate() {
             if (!nextAppointmentData.scheduleDate || !nextAppointmentData.startTime) return;
     
             try {
-                // Fetch all tokens for that date
-                const tokens = await fetchTokensByDate(nextAppointmentData.scheduleDate);
+                // Fetch all tokens for that date (exclude doctor channeling appointments)
+                const allTokens = await fetchTokensByDate(nextAppointmentData.scheduleDate);
+                const tokens = allTokens.filter(t => t.doctorSessionId === null);
     
                 // Convert selected time to hour (e.g. 09:30 → 9)
                 const selectedHour = new Date(nextAppointmentData.startTime).getHours();

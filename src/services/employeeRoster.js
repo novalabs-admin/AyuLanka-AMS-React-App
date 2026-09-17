@@ -16,11 +16,13 @@ const api = axios.create({
 // Fetch Employees from the server
 export const fetchEmployees = async () => {
   try {
-    const response = await api.get("/employee");
-    return response.data;  // Assuming the response data contains the array of employees
+    const companyId = sessionStorage.getItem("companyId");
+    const params = companyId ? { companyId } : {};
+    const response = await api.get("/employee", { params });
+    return response.data;
   } catch (error) {
     console.error("Error fetching employees:", error);
-    throw error;  // Re-throw the error for further handling
+    throw error;
   }
 };
 
@@ -38,12 +40,13 @@ export const fetchShifts = async () => {
 // Fetch Leave Data from the server
 export const fetchLeaves = async (startDate, endDate) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/staffleave/bydaterange`, {
-        params: {
-          startDate: startDate.toISOString().substring(0, 10), // Format as YYYY-MM-DD
-          endDate: endDate.toISOString().substring(0, 10)      // Format as YYYY-MM-DD
-        }
-      });
+      const companyId = sessionStorage.getItem("companyId");
+      const params = {
+        startDate: startDate.toISOString().substring(0, 10),
+        endDate: endDate.toISOString().substring(0, 10)
+      };
+      if (companyId) params.companyId = companyId;
+      const response = await axios.get(`${API_BASE_URL}/staffleave/bydaterange`, { params });
       return response.data;
     } catch (error) {
       console.error("Error fetching leaves:", error);
@@ -65,8 +68,10 @@ export const saveRoster = async (rosterData) => {
   // Fetch Shifts from the server
 export const fetchRosterDates = async () => {
     try {
-      const response = await api.get("/staffroster/dates");
-      return response.data;  // Assuming the response data contains the array of shifts
+      const companyId = sessionStorage.getItem("companyId");
+      const params = companyId ? { companyId } : {};
+      const response = await api.get("/staffroster/dates", { params });
+      return response.data;
     } catch (error) {
       console.error("Error fetching staff roster dates:", error);
       throw error;
@@ -146,7 +151,9 @@ export const updateShift = async (data) => {
 
 export async function getPendingDayOffs() {
   try {
-    const response = await api.get("/dayoffchangemaster");  // Endpoint to save roster data
+    const companyId = sessionStorage.getItem("companyId");
+    const params = companyId ? { companyId } : {};
+    const response = await api.get("/dayoffchangemaster", { params });
     return response.data;
   } catch (error) {
     console.error("Error getting day off data:", error);
@@ -156,7 +163,9 @@ export async function getPendingDayOffs() {
 
 export async function getPendingShifts() {
   try {
-    const response = await api.get("/shiftchangemaster");  // Endpoint to save roster data
+    const companyId = sessionStorage.getItem("companyId");
+    const params = companyId ? { companyId } : {};
+    const response = await api.get("/shiftchangemaster", { params });
     return response.data;
   } catch (error) {
     console.error("Error getting shift data:", error);

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import * as XLSX from 'xlsx'; // Import XLSX library
 import './appointmentReport.css';
 import { fetchAllAppointmentsByDateRange } from '../../../services/appointmentSchedulerApi';
+import SkeletonTable from '../../common/SkeletonTable';
+import EmptyState from '../../common/EmptyState';
 
 const AppointmentReport = () => {
     const [appointments, setAppointments] = useState([]);
@@ -9,14 +11,17 @@ const AppointmentReport = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [fetched, setFetched] = useState(false);
 
     const fetchAppointments = async (date) => {
+        if (!startDate || !endDate) {
+            alert('Please select both start and end dates.');
+            return;
+        }
+        setLoading(true);
+        setFetched(false);
         try {
-            if (!startDate || !endDate) {
-                alert('Please select both start and end dates.');
-                return;
-            }
-
             const start = new Date(startDate); // Convert to Date object
             const end = new Date(endDate);     // Convert to Date object
             const data = await fetchAllAppointmentsByDateRange(start, end);
@@ -33,6 +38,9 @@ const AppointmentReport = () => {
             setAppointments(sortedData);
         } catch (error) {
             console.error('Error fetching day offs data:', error);
+        } finally {
+            setLoading(false);
+            setFetched(true);
         }
     };
 
@@ -256,8 +264,13 @@ const AppointmentReport = () => {
                 </div>
             </div>
 
+            {loading && <SkeletonTable rows={6} cols={9} />}
+            {!loading && fetched && filteredAppointments.length === 0 && (
+                <EmptyState title="No appointments found"
+                    message="No appointments match the selected filters." />
+            )}
             {/* Scrollable Appointment Report Table */}
-            <div className="scrollable-table-container">
+            {!loading && filteredAppointments.length > 0 && <div className="scrollable-table-container">
                 <table className="report-table">
                     <thead>
                         <tr>
@@ -302,7 +315,7 @@ const AppointmentReport = () => {
                         ))}
                     </tbody>
                 </table>
-            </div>
+            </div>}
             <br /><br />
             {/* Print and Download Buttons */}
             <div className="report-buttons">
