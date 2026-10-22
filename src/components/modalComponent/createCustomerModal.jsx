@@ -6,7 +6,7 @@ const CreateCustomerModal = ({
   setPhone,
   loading,
   onClose,
-  onCreate
+  onCreate,
 }) => {
   if (!show) return null;
 
@@ -17,7 +17,6 @@ const CreateCustomerModal = ({
       <div className="modal fade show d-block" tabIndex="-1">
         <div className="modal-dialog modal-dialog-centered">
           <div className="modal-content">
-
             <div className="modal-header bg-success text-white">
               <h5 className="modal-title">Create New Customer</h5>
               <button
@@ -52,14 +51,16 @@ const CreateCustomerModal = ({
                   }`}
                   value={phone}
                   onChange={(e) =>
-                    setPhone(e.target.value.replace(/\D/g, "")) // digits only
-                  }
-                  placeholder="Enter contact number"
+                    setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))
+                  } // digits only, max 10
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="e.g. 0784327095"
                 />
 
                 {phone && !isPhoneValid && (
                   <div className="invalid-feedback">
-                    Contact number must be 10 digits starting with 0 or 9 digits without 0
+                    Contact number must be exactly 10 digits and start with 0
                   </div>
                 )}
               </div>
@@ -76,13 +77,12 @@ const CreateCustomerModal = ({
 
               <button
                 className="btn btn-success"
-                disabled={!customerName || !isPhoneValid || loading}
+                disabled={!customerName.trim() || !isPhoneValid || loading}
                 onClick={onCreate}
               >
                 {loading ? "Creating..." : "Create Customer"}
               </button>
             </div>
-
           </div>
         </div>
       </div>
@@ -93,7 +93,7 @@ const CreateCustomerModal = ({
   );
 };
 
-// helper
-const isValidContactNo = (value) => /^(0\d{9}|\d{9})$/.test(value);
+// helper: exactly 10 digits, leading 0
+const isValidContactNo = (value) => /^0\d{9}$/.test(value);
 
 export default CreateCustomerModal;
