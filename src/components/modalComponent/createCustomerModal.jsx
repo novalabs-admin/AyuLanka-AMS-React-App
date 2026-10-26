@@ -91,7 +91,9 @@ const CreateCustomerModal = ({
 
               {/* City */}
               <div className="mb-3">
-                <label className="form-label">City</label>
+                <label className="form-label">
+                  Nearest City <span className="text-danger">*</span>
+                </label>
                 <AsyncSelect
                   value={city}
                   onChange={setCity}
@@ -138,7 +140,9 @@ const CreateCustomerModal = ({
 
               <button
                 className="btn btn-success"
-                disabled={!customerName.trim() || !isPhoneValid || loading}
+                disabled={
+                  !customerName.trim() || !isPhoneValid || !city || loading
+                }
                 onClick={onCreate}
               >
                 {loading ? "Creating..." : "Create Customer"}
