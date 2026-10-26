@@ -2,7 +2,10 @@ import React, { useState, useEffect, useCallback } from "react";
 import Modal from "react-modal";
 import CreatableSelect from "react-select/creatable";
 import "./channelingAppointment.css";
-import { fetchDoctorSessions, fetchDoctorSessionAvailability } from "../../services/doctorSessionApi";
+import {
+  fetchDoctorSessions,
+  fetchDoctorSessionAvailability,
+} from "../../services/doctorSessionApi";
 import {
   addAppointment,
   deleteAppointment,
@@ -32,7 +35,7 @@ const emptyForm = {
 
 const ChannelingAppointment = () => {
   const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().substring(0, 10)
+    new Date().toISOString().substring(0, 10),
   );
   const [sessions, setSessions] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
@@ -58,6 +61,8 @@ const ChannelingAppointment = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newCustomerName, setNewCustomerName] = useState("");
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
+  const [newCustomerCity, setNewCustomerCity] = useState(null);
+  const [newCustomerRemark, setNewCustomerRemark] = useState("");
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
 
   // Confirmation / result modals
@@ -89,7 +94,9 @@ const ChannelingAppointment = () => {
 
   // ── Load treatment types once ─────────────────────────────────────────────
   useEffect(() => {
-    fetchTreatmentTypesByLocation().then(setTreatmentTypes).catch(() => {});
+    fetchTreatmentTypesByLocation()
+      .then(setTreatmentTypes)
+      .catch(() => {});
   }, []);
 
   const loadSessions = async () => {
@@ -129,7 +136,7 @@ const ChannelingAppointment = () => {
           customerName: p.customerName,
           customerId: p.id,
           contactNo: p.contactNo,
-        }))
+        })),
       );
     } catch {
       setPatientOptions([]);
@@ -148,7 +155,7 @@ const ChannelingAppointment = () => {
   const handleTokenClick = (tokenNumber) => {
     setSelectedTokenNo(tokenNumber);
     const existing = bookedTokens.find(
-      (a) => parseInt(a.tokenNo, 10) === tokenNumber
+      (a) => parseInt(a.tokenNo, 10) === tokenNumber,
     );
 
     if (existing) {
@@ -185,7 +192,7 @@ const ChannelingAppointment = () => {
     const filteredBookedTokens = bookedTokens.filter(
       (bt) =>
         bt.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        bt.contactNo?.includes(searchTerm)
+        bt.contactNo?.includes(searchTerm),
     );
 
     let tokenNumber = 1;
@@ -196,14 +203,14 @@ const ChannelingAppointment = () => {
         const current = tokenNumber++;
 
         const booked = bookedTokens.find(
-          (bt) => parseInt(bt.tokenNo, 10) === current
+          (bt) => parseInt(bt.tokenNo, 10) === current,
         );
 
         // If searching, only show matching booked tokens (hide others entirely)
         if (
           searchTerm &&
           !filteredBookedTokens.some(
-            (bt) => parseInt(bt.tokenNo, 10) === current
+            (bt) => parseInt(bt.tokenNo, 10) === current,
           )
         ) {
           rowTokens.push(null);
@@ -215,8 +222,8 @@ const ChannelingAppointment = () => {
           btnClass = booked.chitNo
             ? "btn-success"
             : booked.isNeededToFollowUp
-            ? "btn-danger"
-            : "btn-warning";
+              ? "btn-danger"
+              : "btn-warning";
         }
 
         rowTokens.push(
@@ -272,7 +279,7 @@ const ChannelingAppointment = () => {
                 </span>
               )}
             </button>
-          </div>
+          </div>,
         );
       }
 
@@ -281,7 +288,7 @@ const ChannelingAppointment = () => {
         layout.push(
           <div className="d-flex align-items-center mb-2" key={r}>
             <div className="d-flex flex-wrap flex-grow-1">{rowTokens}</div>
-          </div>
+          </div>,
         );
       }
     }
@@ -327,8 +334,7 @@ const ChannelingAppointment = () => {
       const updated = await fetchDoctorSessionAvailability(selectedSession.id);
       setAvailability(updated);
     } catch (err) {
-      const msg =
-        err?.response?.data?.message ?? "Failed to save appointment.";
+      const msg = err?.response?.data?.message ?? "Failed to save appointment.";
       setResultModal({ type: "error", message: msg });
       setShowResultModal(true);
     } finally {
@@ -368,6 +374,8 @@ const ChannelingAppointment = () => {
       const res = await createCustomer({
         customerName: newCustomerName,
         phone: newCustomerPhone,
+        cityId: newCustomerCity?.value ?? null,
+        remark: newCustomerRemark.trim() || null,
       });
       setForm((prev) => ({
         ...prev,
@@ -410,9 +418,7 @@ const ChannelingAppointment = () => {
       <div className="row">
         {/* ── Session list (left column) ─────────────────────────────── */}
         <div className="col-md-3">
-          <h6 className="fw-semibold mb-3">
-            Sessions ({sessions.length})
-          </h6>
+          <h6 className="fw-semibold mb-3">Sessions ({sessions.length})</h6>
           {sessions.length === 0 ? (
             <p className="text-muted">No sessions for this date.</p>
           ) : (
@@ -423,8 +429,8 @@ const ChannelingAppointment = () => {
                   !s.isActive
                     ? "inactive"
                     : selectedSession?.id === s.id
-                    ? "selected"
-                    : ""
+                      ? "selected"
+                      : ""
                 }`}
                 onClick={() => handleSessionSelect(s)}
               >
@@ -436,9 +442,7 @@ const ChannelingAppointment = () => {
                 </div>
                 <div className="d-flex justify-content-between mt-1 small text-muted">
                   <span>Max: {s.maxPatients}</span>
-                  {!s.isActive && (
-                    <span className="text-danger">Inactive</span>
-                  )}
+                  {!s.isActive && <span className="text-danger">Inactive</span>}
                 </div>
                 {selectedSession?.id === s.id && availability && (
                   <>
@@ -449,13 +453,14 @@ const ChannelingAppointment = () => {
                           width: `${Math.min(
                             (availability.booked / availability.maxPatients) *
                               100,
-                            100
+                            100,
                           )}%`,
                         }}
                       />
                     </div>
                     <div className="small text-muted mt-1">
-                      {availability.remaining} remaining / {availability.maxPatients}
+                      {availability.remaining} remaining /{" "}
+                      {availability.maxPatients}
                     </div>
                   </>
                 )}
@@ -470,9 +475,12 @@ const ChannelingAppointment = () => {
             <>
               <div className="d-flex align-items-center justify-content-between mb-3">
                 <h5 className="mb-0">
-                  Dr. {selectedSession.doctor?.fullName ?? `#${selectedSession.doctorId}`}
+                  Dr.{" "}
+                  {selectedSession.doctor?.fullName ??
+                    `#${selectedSession.doctorId}`}
                   <small className="text-muted ms-2">
-                    ({formatTime(selectedSession.startTime)} – {formatTime(selectedSession.endTime)})
+                    ({formatTime(selectedSession.startTime)} –{" "}
+                    {formatTime(selectedSession.endTime)})
                   </small>
                 </h5>
 
@@ -530,7 +538,8 @@ const ChannelingAppointment = () => {
                   <span className="badge bg-warning me-1">&nbsp;</span>Booked
                 </span>
                 <span>
-                  <span className="badge bg-success me-1">&nbsp;</span>Token Issued
+                  <span className="badge bg-success me-1">&nbsp;</span>Token
+                  Issued
                 </span>
                 <span>
                   <span className="badge bg-danger me-1">&nbsp;</span>Follow-up
@@ -571,7 +580,10 @@ const ChannelingAppointment = () => {
       {/* ── Booking Modal ──────────────────────────────────────────────────── */}
       <Modal
         isOpen={modalIsOpen}
-        onRequestClose={() => { setModalIsOpen(false); resetForm(); }}
+        onRequestClose={() => {
+          setModalIsOpen(false);
+          resetForm();
+        }}
         className="Modal custom-modal"
         overlayClassName="Overlay"
         closeTimeoutMS={300}
@@ -607,7 +619,10 @@ const ChannelingAppointment = () => {
                       type="button"
                       className="close custom-close"
                       style={{ width: "50px" }}
-                      onClick={() => { setModalIsOpen(false); resetForm(); }}
+                      onClick={() => {
+                        setModalIsOpen(false);
+                        resetForm();
+                      }}
                     >
                       <span>&times;</span>
                     </button>
@@ -619,8 +634,11 @@ const ChannelingAppointment = () => {
             {/* Session info bar */}
             {selectedSession && (
               <div className="px-3 py-2 bg-light border-bottom small text-muted">
-                Dr. {selectedSession.doctor?.fullName ?? `#${selectedSession.doctorId}`}
-                &nbsp;|&nbsp;{formatTime(selectedSession.startTime)} – {formatTime(selectedSession.endTime)}
+                Dr.{" "}
+                {selectedSession.doctor?.fullName ??
+                  `#${selectedSession.doctorId}`}
+                &nbsp;|&nbsp;{formatTime(selectedSession.startTime)} –{" "}
+                {formatTime(selectedSession.endTime)}
                 &nbsp;|&nbsp;{selectedDate}
               </div>
             )}
@@ -651,7 +669,9 @@ const ChannelingAppointment = () => {
                         handlePatientSearch(value);
                         return value;
                       }}
-                      formatCreateLabel={(input) => `➕ Create customer "${input}"`}
+                      formatCreateLabel={(input) =>
+                        `➕ Create customer "${input}"`
+                      }
                       onChange={(selected) => {
                         if (!selected) {
                           setForm((prev) => ({
@@ -665,6 +685,8 @@ const ChannelingAppointment = () => {
                         if (selected.__isNew__) {
                           setNewCustomerName(selected.label);
                           setNewCustomerPhone("");
+                          setNewCustomerCity(null);
+                          setNewCustomerRemark("");
                           setShowCreateModal(true);
                           return;
                         }
@@ -688,7 +710,10 @@ const ChannelingAppointment = () => {
                       type="text"
                       value={form.contactNo}
                       onChange={(e) =>
-                        setForm((prev) => ({ ...prev, contactNo: e.target.value }))
+                        setForm((prev) => ({
+                          ...prev,
+                          contactNo: e.target.value,
+                        }))
                       }
                       required
                     />
@@ -704,7 +729,7 @@ const ChannelingAppointment = () => {
                       multiple
                       style={{ height: 90 }}
                       value={form.appoinmentTreatments.map((t) =>
-                        String(t.TreatmentTypeId)
+                        String(t.TreatmentTypeId),
                       )}
                       onChange={(e) => {
                         const selected = Array.from(
@@ -712,7 +737,7 @@ const ChannelingAppointment = () => {
                           (o) => ({
                             AppoinmentId: form.id || 0,
                             TreatmentTypeId: Number(o.value),
-                          })
+                          }),
                         );
                         setForm((prev) => ({
                           ...prev,
@@ -723,7 +748,9 @@ const ChannelingAppointment = () => {
                       {treatmentTypes.map((t) => (
                         <option key={t.id} value={String(t.id)}>
                           {t.name}
-                          {t.treatmentShortCode ? ` - ${t.treatmentShortCode}` : ""}
+                          {t.treatmentShortCode
+                            ? ` - ${t.treatmentShortCode}`
+                            : ""}
                         </option>
                       ))}
                     </select>
@@ -742,7 +769,10 @@ const ChannelingAppointment = () => {
                       rows="2"
                       value={form.remarks}
                       onChange={(e) =>
-                        setForm((prev) => ({ ...prev, remarks: e.target.value }))
+                        setForm((prev) => ({
+                          ...prev,
+                          remarks: e.target.value,
+                        }))
                       }
                     />
                   </div>
@@ -751,7 +781,10 @@ const ChannelingAppointment = () => {
                 {/* Patient Contacted toggle */}
                 <div className="row mt-2">
                   <div className="col-md-3 form-group">
-                    <label className="form-check-label" style={{ color: "red" }}>
+                    <label
+                      className="form-check-label"
+                      style={{ color: "red" }}
+                    >
                       Patient Contacted
                     </label>
                   </div>
@@ -773,7 +806,13 @@ const ChannelingAppointment = () => {
                 {form.chitNo != null && (
                   <div className="row mt-1">
                     <div className="col-12">
-                      <label style={{ fontSize: "18px", fontWeight: "bold", color: "red" }}>
+                      <label
+                        style={{
+                          fontSize: "18px",
+                          fontWeight: "bold",
+                          color: "red",
+                        }}
+                      >
                         Chit No: {form.chitNo}
                       </label>
                     </div>
@@ -830,6 +869,10 @@ const ChannelingAppointment = () => {
         setCustomerName={setNewCustomerName}
         phone={newCustomerPhone}
         setPhone={setNewCustomerPhone}
+        city={newCustomerCity}
+        setCity={setNewCustomerCity}
+        remark={newCustomerRemark}
+        setRemark={setNewCustomerRemark}
         loading={isCreatingCustomer}
         onClose={() => setShowCreateModal(false)}
         onCreate={handleCreateCustomer}

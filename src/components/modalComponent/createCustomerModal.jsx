@@ -1,9 +1,26 @@
+import AsyncSelect from "react-select/async";
+import { searchCities } from "../../services/geographyApi";
+
+// Map API city -> react-select option; `value` is the cityId sent on create
+const loadCityOptions = async (input) => {
+  if (input.trim().length < 2) return [];
+  const cities = await searchCities(input.trim());
+  return cities.map((c) => ({
+    value: c.id,
+    label: `${c.nameEn}, ${c.districtName}${c.postCode ? ` (${c.postCode})` : ""}`,
+  }));
+};
+
 const CreateCustomerModal = ({
   show,
   customerName,
   setCustomerName,
   phone,
   setPhone,
+  city,
+  setCity,
+  remark,
+  setRemark,
   loading,
   onClose,
   onCreate,
@@ -63,6 +80,35 @@ const CreateCustomerModal = ({
                     Contact number must be exactly 10 digits and start with 0
                   </div>
                 )}
+              </div>
+
+              {/* City */}
+              <div className="mb-3">
+                <label className="form-label">City</label>
+                <AsyncSelect
+                  value={city}
+                  onChange={setCity}
+                  loadOptions={loadCityOptions}
+                  isClearable
+                  placeholder="Type to search city"
+                  noOptionsMessage={({ inputValue }) =>
+                    inputValue.trim().length < 2
+                      ? "Type at least 2 characters"
+                      : "No cities found"
+                  }
+                />
+              </div>
+
+              {/* Remark */}
+              <div className="mb-3">
+                <label className="form-label">Remark</label>
+                <textarea
+                  className="form-control"
+                  rows={2}
+                  value={remark}
+                  onChange={(e) => setRemark(e.target.value)}
+                  placeholder="Optional remark"
+                />
               </div>
             </div>
 
