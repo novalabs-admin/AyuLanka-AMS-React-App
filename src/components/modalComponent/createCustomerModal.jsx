@@ -1,14 +1,18 @@
+import { useState } from "react";
 import AsyncSelect from "react-select/async";
 import { searchCities } from "../../services/geographyApi";
+import AddCityModal from "./addCityModal";
 
 // Map API city -> react-select option; `value` is the cityId sent on create
+const toCityOption = (c) => ({
+  value: c.id,
+  label: `${c.nameEn}, ${c.districtName}${c.postCode ? ` (${c.postCode})` : ""}`,
+});
+
 const loadCityOptions = async (input) => {
   if (input.trim().length < 2) return [];
   const cities = await searchCities(input.trim());
-  return cities.map((c) => ({
-    value: c.id,
-    label: `${c.nameEn}, ${c.districtName}${c.postCode ? ` (${c.postCode})` : ""}`,
-  }));
+  return cities.map(toCityOption);
 };
 
 const CreateCustomerModal = ({
@@ -25,6 +29,9 @@ const CreateCustomerModal = ({
   onClose,
   onCreate,
 }) => {
+  // null = closed; otherwise the text typed in the city search
+  const [newCityName, setNewCityName] = useState(null);
+
   if (!show) return null;
 
   const isPhoneValid = isValidContactNo(phone);
@@ -92,9 +99,17 @@ const CreateCustomerModal = ({
                   isClearable
                   placeholder="Type to search city"
                   noOptionsMessage={({ inputValue }) =>
-                    inputValue.trim().length < 2
-                      ? "Type at least 2 characters"
-                      : "No cities found"
+                    inputValue.trim().length < 2 ? (
+                      "Type at least 2 characters"
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn btn-link btn-sm p-0"
+                        onClick={() => setNewCityName(inputValue.trim())}
+                      >
+                        No cities found. Add "{inputValue.trim()}" as a new city
+                      </button>
+                    )
                   }
                 />
               </div>
@@ -135,6 +150,17 @@ const CreateCustomerModal = ({
 
       {/* Backdrop */}
       <div className="modal-backdrop fade show"></div>
+
+      {newCityName !== null && (
+        <AddCityModal
+          initialName={newCityName}
+          onClose={() => setNewCityName(null)}
+          onCreated={(created) => {
+            setCity(toCityOption(created));
+            setNewCityName(null);
+          }}
+        />
+      )}
     </>
   );
 };

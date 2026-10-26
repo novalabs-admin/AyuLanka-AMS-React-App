@@ -18,3 +18,18 @@ export const searchCities = async (keyword, limit = 20) => {
   const res = await api.get("/Geography/search-cities", { params });
   return res.data;
 };
+
+export const getProvinces = async () => {
+  const res = await api.get("/Geography/provinces");
+  return res.data;
+};
+
+export const getDistricts = async (provinceId) => {
+  const res = await api.get(`/Geography/districts?provinceId=${provinceId}`);
+  return res.data;
+};
+
+export const createCity = async (cityData) => {
+  const res = await api.post("/Geography/cities", cityData);
+  return res.data;
+};
