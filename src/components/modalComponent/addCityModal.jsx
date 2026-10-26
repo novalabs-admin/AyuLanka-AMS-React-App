@@ -3,6 +3,7 @@ import {
   getProvinces,
   getDistricts,
   createCity,
+  searchCities,
 } from "../../services/geographyApi";
 
 // Rendered on top of CreateCustomerModal, so z-indexes sit above Bootstrap's modal (1055)
@@ -37,19 +38,26 @@ const AddCityModal = ({ initialName, onClose, onCreated }) => {
   const handleSave = async () => {
     try {
       setSaving(true);
-      const created = await createCity({
+      await createCity({
         nameEn: nameEn.trim(),
         provinceId: Number(provinceId),
         districtId: Number(districtId),
         postCode: postCode.trim() || null,
       });
-      const district = districts.find((d) => String(d.id) === districtId);
-      onCreated({
-        id: created.id,
-        nameEn: nameEn.trim(),
-        districtName: district?.nameEn,
-        postCode: postCode.trim(),
-      });
+      // createCity's response doesn't expose the new id, so look the city up
+      const name = nameEn.trim();
+      const matches = await searchCities(name);
+      const city = matches.find(
+        (c) =>
+          c.districtId === Number(districtId) &&
+          c.nameEn.toLowerCase() === name.toLowerCase(),
+      );
+      if (!city) {
+        alert("City added, but it could not be found. Please search and select it.");
+        onClose();
+        return;
+      }
+      onCreated(city);
     } catch {
       alert("City creation failed.");
     } finally {
