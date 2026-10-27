@@ -28,7 +28,9 @@ import moment from "moment";
 import { Autocomplete, TextField } from "@mui/material";
 import { ConfirmationModalForValidation } from "../confirmationModalForValidation/confirmationModalForValidation.jsx";
 import CreatableSelect from "react-select/creatable";
-import CreateCustomerModal from "../modalComponent/createCustomerModal.jsx";
+import CreateCustomerModal, {
+  LOCAL_COUNTRY_ID,
+} from "../modalComponent/createCustomerModal.jsx";
 
 Modal.setAppElement("#root");
 
@@ -122,6 +124,8 @@ function TokenGenerate() {
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
   const [newCustomerCity, setNewCustomerCity] = useState(null);
   const [newCustomerRemark, setNewCustomerRemark] = useState("");
+  const [newCustomerCountry, setNewCustomerCountry] = useState(null);
+  const [newCustomerIsForeigner, setNewCustomerIsForeigner] = useState(false);
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
   const [backendErrors, setBackendErrors] = useState({});
   const [nextAppBackendErrors, setNextAppBackendErrors] = useState({});
@@ -1401,8 +1405,11 @@ function TokenGenerate() {
       const res = await createCustomer({
         customerName: newCustomerName,
         phone: newCustomerPhone,
-        cityId: newCustomerCity?.value ?? null,
         remark: newCustomerRemark.trim() || null,
+        cityId: newCustomerCity?.value ?? null,
+        countryId: newCustomerIsForeigner
+          ? (newCustomerCountry?.value ?? null)
+          : LOCAL_COUNTRY_ID,
       });
 
       // bind created customer to appointment
@@ -1781,6 +1788,8 @@ function TokenGenerate() {
                             setNewCustomerPhone("");
                             setNewCustomerCity(null);
                             setNewCustomerRemark("");
+                            setNewCustomerCountry(null);
+                            setNewCustomerIsForeigner(false);
                             setShowCreateModal(true);
                             return;
                           }
@@ -2306,6 +2315,10 @@ function TokenGenerate() {
         setCity={setNewCustomerCity}
         remark={newCustomerRemark}
         setRemark={setNewCustomerRemark}
+        country={newCustomerCountry}
+        setCountry={setNewCustomerCountry}
+        isForeigner={newCustomerIsForeigner}
+        setIsForeigner={setNewCustomerIsForeigner}
         loading={isCreatingCustomer}
         onClose={() => setShowCreateModal(false)}
         onCreate={handleCreateCustomer}
