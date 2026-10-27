@@ -1,6 +1,6 @@
 import { useState } from "react";
 import AsyncSelect from "react-select/async";
-import { searchCities } from "../../services/geographyApi";
+import { searchCities, searchCountries } from "../../services/geographyApi";
 import AddCityModal from "./addCityModal";
 
 // Map API city -> react-select option; `value` is the cityId sent on create
@@ -15,6 +15,19 @@ const loadCityOptions = async (input) => {
   return cities.map(toCityOption);
 };
 
+// Local customers are always saved with this country (Sri Lanka)
+export const LOCAL_COUNTRY_ID = 144;
+const LOCAL_COUNTRY_OPTION = { value: LOCAL_COUNTRY_ID, label: "Sri Lanka" };
+
+// `value` is the countryId sent on create
+const toCountryOption = (c) => ({ value: c.id, label: c.name });
+
+const loadCountryOptions = async (input) => {
+  if (input.trim().length < 2) return [];
+  const countries = await searchCountries(input.trim());
+  return countries.map(toCountryOption);
+};
+
 const CreateCustomerModal = ({
   show,
   customerName,
@@ -23,6 +36,10 @@ const CreateCustomerModal = ({
   setPhone,
   city,
   setCity,
+  country,
+  setCountry,
+  isForeigner,
+  setIsForeigner,
   remark,
   setRemark,
   loading,
@@ -35,6 +52,13 @@ const CreateCustomerModal = ({
   if (!show) return null;
 
   const isPhoneValid = isValidContactNo(phone);
+
+  // Only the active type's location is kept, so the other id is never sent
+  const changeCustomerType = (foreigner) => {
+    setIsForeigner(foreigner);
+    setCity(null);
+    setCountry(null);
+  };
 
   return (
     <>
@@ -89,15 +113,47 @@ const CreateCustomerModal = ({
                 )}
               </div>
 
+              {/* Customer Type */}
+              <div className="mb-3">
+                <label className="form-label">Customer Type</label>
+                <div
+                  className="btn-group w-100"
+                  role="radiogroup"
+                  aria-label="Customer type"
+                >
+                  {[
+                    ["Local", false],
+                    ["Foreigner", true],
+                  ].map(([label, value]) => (
+                    <button
+                      key={label}
+                      type="button"
+                      role="radio"
+                      aria-checked={isForeigner === value}
+                      className={`btn ${
+                        isForeigner === value
+                          ? "btn-success"
+                          : "btn-outline-success"
+                      }`}
+                      onClick={() => changeCustomerType(value)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* City */}
               <div className="mb-3">
                 <label className="form-label">
-                  Nearest City <span className="text-danger">*</span>
+                  Nearest City{" "}
+                  {!isForeigner && <span className="text-danger">*</span>}
                 </label>
                 <AsyncSelect
                   value={city}
                   onChange={setCity}
                   loadOptions={loadCityOptions}
+                  isDisabled={isForeigner}
                   isClearable
                   placeholder="Type to search city"
                   noOptionsMessage={({ inputValue }) =>
@@ -112,6 +168,27 @@ const CreateCustomerModal = ({
                         No cities found. Add "{inputValue.trim()}" as a new city
                       </button>
                     )
+                  }
+                />
+              </div>
+
+              {/* Country */}
+              <div className="mb-3">
+                <label className="form-label">
+                  Country{" "}
+                  {isForeigner && <span className="text-danger">*</span>}
+                </label>
+                <AsyncSelect
+                  value={isForeigner ? country : LOCAL_COUNTRY_OPTION}
+                  onChange={setCountry}
+                  loadOptions={loadCountryOptions}
+                  isDisabled={!isForeigner}
+                  isClearable={isForeigner}
+                  placeholder="Type to search country"
+                  noOptionsMessage={({ inputValue }) =>
+                    inputValue.trim().length < 2
+                      ? "Type at least 2 characters"
+                      : "No countries found"
                   }
                 />
               </div>
@@ -141,7 +218,10 @@ const CreateCustomerModal = ({
               <button
                 className="btn btn-success"
                 disabled={
-                  !customerName.trim() || !isPhoneValid || !city || loading
+                  !customerName.trim() ||
+                  !isPhoneValid ||
+                  !(isForeigner ? country : city) ||
+                  loading
                 }
                 onClick={onCreate}
               >

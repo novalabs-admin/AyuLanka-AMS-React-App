@@ -19,6 +19,12 @@ export const searchCities = async (keyword, limit = 20) => {
   return res.data;
 };
 
+export const searchCountries = async (keyword, limit = 20) => {
+  const params = { keyword, limit };
+  const res = await api.get("/Geography/search-countries", { params });
+  return res.data;
+};
+
 export const getProvinces = async () => {
   const res = await api.get("/Geography/provinces");
   return res.data;

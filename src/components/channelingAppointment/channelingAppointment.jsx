@@ -16,7 +16,9 @@ import {
 } from "../../services/appointmentSchedulerApi";
 import { ConfirmationModal } from "../confirmationModal/confirmationModal.jsx";
 import AppointmentModalComponent from "../appointmentModalComponent/appointmentModalComponent.jsx";
-import CreateCustomerModal from "../modalComponent/createCustomerModal.jsx";
+import CreateCustomerModal, {
+  LOCAL_COUNTRY_ID,
+} from "../modalComponent/createCustomerModal.jsx";
 
 Modal.setAppElement("#root");
 
@@ -63,6 +65,8 @@ const ChannelingAppointment = () => {
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
   const [newCustomerCity, setNewCustomerCity] = useState(null);
   const [newCustomerRemark, setNewCustomerRemark] = useState("");
+  const [newCustomerCountry, setNewCustomerCountry] = useState(null);
+  const [newCustomerIsForeigner, setNewCustomerIsForeigner] = useState(false);
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
 
   // Confirmation / result modals
@@ -374,8 +378,11 @@ const ChannelingAppointment = () => {
       const res = await createCustomer({
         customerName: newCustomerName,
         phone: newCustomerPhone,
-        cityId: newCustomerCity?.value ?? null,
         remark: newCustomerRemark.trim() || null,
+        cityId: newCustomerCity?.value ?? null,
+        countryId: newCustomerIsForeigner
+          ? (newCustomerCountry?.value ?? null)
+          : LOCAL_COUNTRY_ID,
       });
       setForm((prev) => ({
         ...prev,
@@ -687,6 +694,8 @@ const ChannelingAppointment = () => {
                           setNewCustomerPhone("");
                           setNewCustomerCity(null);
                           setNewCustomerRemark("");
+                          setNewCustomerCountry(null);
+                          setNewCustomerIsForeigner(false);
                           setShowCreateModal(true);
                           return;
                         }
@@ -873,6 +882,10 @@ const ChannelingAppointment = () => {
         setCity={setNewCustomerCity}
         remark={newCustomerRemark}
         setRemark={setNewCustomerRemark}
+        country={newCustomerCountry}
+        setCountry={setNewCustomerCountry}
+        isForeigner={newCustomerIsForeigner}
+        setIsForeigner={setNewCustomerIsForeigner}
         loading={isCreatingCustomer}
         onClose={() => setShowCreateModal(false)}
         onCreate={handleCreateCustomer}
