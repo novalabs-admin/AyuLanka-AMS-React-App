@@ -34,6 +34,33 @@ import CreateCustomerModal, {
 
 Modal.setAppElement("#root");
 
+// "Name - CODE - Rs. 1400" label for a treatment type option
+const treatmentLabel = (option) =>
+  [
+    option.name,
+    option.treatmentShortCode,
+    option.unitPrice != null && option.unitPrice !== ""
+      ? `Rs. ${option.unitPrice}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" - ");
+
+const EstimatedFee = ({ amount }) => (
+  <div className="d-flex justify-content-between align-items-center mt-2 px-3 py-2 bg-light border rounded">
+    <span>
+      Estimated Fee <small className="text-muted">(may vary)</small>
+    </span>
+    <strong className="text-success">
+      Rs.{" "}
+      {amount.toLocaleString("en-LK", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}
+    </strong>
+  </div>
+);
+
 function TokenGenerate() {
   const [currentEvents, setCurrentEvents] = useState([]);
   const [dropEvent, setDropEvent] = useState([]);
@@ -1416,6 +1443,14 @@ function TokenGenerate() {
     );
   };
 
+  // Sum of the selected treatments' unit prices (an estimate; actual fee can vary)
+  const calcEstimatedFee = (treatmentTypeIds) =>
+    treatmentTypes
+      .filter((type) => treatmentTypeIds.includes(type.id))
+      .reduce((sum, type) => sum + (Number(type.unitPrice) || 0), 0);
+  const estimatedFee = calcEstimatedFee(appointmentData.treatmentTypeId);
+  const nextEstimatedFee = calcEstimatedFee(nextAppointmentData.treatmentTypeId);
+
   const handleCreateCustomer = async () => {
     try {
       setIsCreatingCustomer(true);
@@ -1595,88 +1630,77 @@ function TokenGenerate() {
         contentLabel="Create Appointment"
       >
         <div className="modal-dialog modal-lg">
-          <div className="modal-content custom-modal-content">
-            <div className="modal-header custom-modal-header">
-              <div className="container-fluid">
-                <div className="row">
-                  <div className="col-4">
-                    <h5 className="modal-title-appointment custom-modal-title-appointment">
-                      Create Appointment
-                    </h5>
-                  </div>
-                  <div className="col-6">
-                    <input
-                      className="form-control"
-                      type="text"
-                      id="tokenNo"
-                      name="tokenNo"
-                      style={{
-                        textAlign: "center",
-                        fontSize: "20px",
-                        fontWeight: "bold",
-                        backgroundColor: "#ffc107",
-                      }}
-                      value={appointmentData.tokenNo}
-                      onChange={handleTokenNumberChange}
-                    />
+          <div
+            className="modal-content custom-modal-content d-flex flex-column p-0 overflow-hidden"
+            style={{ maxHeight: "90vh" }}
+          >
+            <div className="modal-header custom-modal-header d-flex align-items-center gap-3 flex-shrink-0 px-3 py-2">
+              <h5 className="modal-title m-0 fs-5 fw-semibold text-nowrap">
+                Create Appointment
+              </h5>
+              <div className="flex-grow-1">
+                <input
+                  className="form-control text-center fs-5 fw-bold"
+                  type="text"
+                  id="tokenNo"
+                  name="tokenNo"
+                  style={{ backgroundColor: "#ffc107" }}
+                  value={appointmentData.tokenNo}
+                  onChange={handleTokenNumberChange}
+                />
 
-                    {backendErrors.tokenNo && (
-                      <div style={{ color: "red", fontSize: "14px" }}>
-                        {backendErrors.tokenNo}
-                      </div>
-                    )}
+                {backendErrors.tokenNo && (
+                  <div style={{ color: "red", fontSize: "14px" }}>
+                    {backendErrors.tokenNo}
                   </div>
-                  <div className="col-2" style={{ textAlign: "right" }}>
-                    <button
-                      type="button"
-                      className="close custom-close"
-                      style={{ width: "50px" }}
-                      onClick={closeModalAndReset}
-                    >
-                      <span>&times;</span>
-                    </button>
-                  </div>
-                </div>
+                )}
               </div>
+              <button
+                type="button"
+                className="btn-close"
+                aria-label="Close"
+                onClick={closeModalAndReset}
+              />
             </div>
-            <div className="row">
-              <div className="col-md-6 form-group">
-                <label htmlFor="locationType">
-                  Location Type <span className="text-danger">*</span>
-                </label>
-                <select
-                  id="locationType"
-                  className="form-control"
-                  value={locationType}
-                  disabled={appointmentData.id}
-                  onChange={(e) => setLocationType(e.target.value)}
-                >
-                  <option value="1">Prime Care</option>
-                  <option value="2">Elite Care (Existing Appointment)</option>
-                  <option value="3">Elite Care (New Appointment)</option>
-                </select>
-              </div>
-              <div className="col-md-3 form-group">
-                <label>&nbsp;</label>
-                <button
-                  onClick={(e) => handleSubmit(e, false, true)}
-                  className="btn btn-secondary w-100"
-                  disabled={appointmentData.chitNo == null}
-                >
-                  Change Location
-                </button>
+            <div className="px-3 pt-3">
+              <div className="row g-3 align-items-end">
+                <div className="col-md-8">
+                  <label htmlFor="locationType" className="form-label">
+                    Location Type <span className="text-danger">*</span>
+                  </label>
+                  <select
+                    id="locationType"
+                    className="form-select"
+                    value={locationType}
+                    disabled={appointmentData.id}
+                    onChange={(e) => setLocationType(e.target.value)}
+                  >
+                    <option value="1">Prime Care</option>
+                    <option value="2">Elite Care (Existing Appointment)</option>
+                    <option value="3">Elite Care (New Appointment)</option>
+                  </select>
+                </div>
+                <div className="col-md-4">
+                  <button
+                    onClick={(e) => handleSubmit(e, false, true)}
+                    className="btn btn-secondary w-100"
+                    disabled={appointmentData.chitNo == null}
+                  >
+                    Change Location
+                  </button>
+                </div>
               </div>
             </div>
             {locationType == "2" && !appointmentData.id && (
               <div className="row">
-                <div className="col-md-12 form-group">
-                  <label htmlFor="eliteAppointments">
+                <div className="col-md-12 px-3 pt-3">
+                  <label htmlFor="eliteAppointments" className="form-label">
                     Select Existing Appointment{" "}
                     <span className="text-danger">*</span>
                   </label>
                   <select
                     id="eliteAppointments"
-                    className="form-control"
+                    className="form-select"
                     value={selectedEliteAppointment?.id || ""}
                     onChange={(e) => {
                       const appt = eliteAppointments.find(
@@ -1760,12 +1784,15 @@ function TokenGenerate() {
               (locationType == "2" && selectedEliteAppointment)) && (
               <form
                 onSubmit={handleSubmit}
-                className="modal-appoinment-body modal-body custom-modal-body"
+                className="d-flex flex-column flex-grow-1 overflow-hidden"
               >
-                <div className="container-fluid">
-                  <div className="row">
-                    <div className="col-md-6 form-group">
-                      <label>
+                <div className="flex-grow-1 overflow-auto px-3 py-3">
+                  <h6 className="text-uppercase text-muted fw-semibold small border-bottom pb-1 mb-3">
+                    Customer
+                  </h6>
+                  <div className="row g-3 mb-4">
+                    <div className="col-md-6">
+                      <label className="form-label">
                         Customer Name <span className="text-danger">*</span>
                       </label>
                       <CreatableSelect
@@ -1830,8 +1857,8 @@ function TokenGenerate() {
                       )}
                     </div>
 
-                    <div className="col-md-6 form-group">
-                      <label htmlFor="contactNo">
+                    <div className="col-md-6">
+                      <label htmlFor="contactNo" className="form-label">
                         Contact Number <span className="text-danger">*</span>
                       </label>
                       <input
@@ -1850,25 +1877,25 @@ function TokenGenerate() {
                       )}
                     </div>
                   </div>
-                  <div className="row">
-                    <div className="col-md-12 col-sm-12 form-group">
-                      <label htmlFor="treatmentTypeId">
+
+                  <h6 className="text-uppercase text-muted fw-semibold small border-bottom pb-1 mb-3">
+                    Treatment
+                  </h6>
+                  <div className="row g-3 mb-4">
+                    <div className="col-12">
+                      <label htmlFor="treatmentTypeId" className="form-label">
                         Treatment Type(s) <span className="text-danger">*</span>
                       </label>
                       <Autocomplete
                         multiple
+                        size="small"
+                        // login.css sets `button { width: 100% }`, which stacks these icons
+                        slotProps={{
+                          clearIndicator: { className: "w-auto" },
+                          popupIndicator: { className: "w-auto" },
+                        }}
                         options={treatmentTypes}
-                        getOptionLabel={(option) =>
-                          [
-                            option.name,
-                            option.treatmentShortCode,
-                            option.unitPrice != null && option.unitPrice !== ""
-                              ? `Rs. ${option.unitPrice}`
-                              : null,
-                          ]
-                            .filter(Boolean)
-                            .join(" - ")
-                        } // Adjust based on your data structure
+                        getOptionLabel={treatmentLabel}
                         value={treatmentTypes.filter((type) =>
                           appointmentData.treatmentTypeId.includes(type.id),
                         )} // Selected values
@@ -1879,18 +1906,32 @@ function TokenGenerate() {
                           <TextField
                             {...params}
                             variant="outlined"
+                            placeholder={
+                              appointmentData.treatmentTypeId.length
+                                ? ""
+                                : "Select treatment type(s)"
+                            }
                             error={!!formErrors.treatmentTypeId}
                             required
                           />
                         )}
                       />
+                      {appointmentData.treatmentTypeId.length > 0 && (
+                        <EstimatedFee amount={estimatedFee} />
+                      )}
                     </div>
                   </div>
-                  <div className="row">
-                    <div className="col-md-6 form-group">
-                      <label htmlFor="employeeId">Employee</label>
+
+                  <h6 className="text-uppercase text-muted fw-semibold small border-bottom pb-1 mb-3">
+                    Schedule
+                  </h6>
+                  <div className="row g-3 mb-4">
+                    <div className="col-12">
+                      <label htmlFor="employeeId" className="form-label">
+                        Employee
+                      </label>
                       <select
-                        className={`form-control ${formErrors.employeeId ? "is-invalid" : ""}`}
+                        className={`form-select ${formErrors.employeeId ? "is-invalid" : ""}`}
                         id="employeeId"
                         name="employeeId"
                         value={appointmentData.employeeId}
@@ -1905,14 +1946,12 @@ function TokenGenerate() {
                         ))}
                       </select>
                     </div>
-                  </div>
-                  <div className="row">
-                    <div className="col-md-6 form-group">
-                      <label htmlFor="scheduleDate">
+                    <div className="col-md-6">
+                      <label htmlFor="scheduleDate" className="form-label">
                         Schedule Date <span className="text-danger">*</span>
                       </label>
-                      <br />
                       <DatePicker
+                        wrapperClassName="w-100"
                         className={`form-control ${formErrors.scheduleDate ? "is-invalid" : ""}`}
                         selected={appointmentData.scheduleDate}
                         dateFormat="MMMM d, yyyy"
@@ -1934,12 +1973,12 @@ function TokenGenerate() {
                         </div>
                       )}
                     </div>
-                    <div className="col-md-6 form-group">
-                      <label htmlFor="startTime">
+                    <div className="col-md-6">
+                      <label htmlFor="startTime" className="form-label">
                         Start Time <span className="text-danger">*</span>
                       </label>
-                      <br />
                       <DatePicker
+                        wrapperClassName="w-100"
                         onChange={(date) => handleTimeChange(date, "startTime")}
                         className={`form-control ${formErrors.startTime ? "is-invalid" : ""}`}
                         selected={startTime}
@@ -1956,9 +1995,15 @@ function TokenGenerate() {
                       )}
                     </div>
                   </div>
-                  <div className="row">
-                    <div className="col-md-12 form-group">
-                      <label htmlFor="remarks">Remarks</label>
+
+                  <h6 className="text-uppercase text-muted fw-semibold small border-bottom pb-1 mb-3">
+                    Other
+                  </h6>
+                  <div className="row g-3">
+                    <div className="col-12">
+                      <label htmlFor="remarks" className="form-label">
+                        Remarks
+                      </label>
                       <textarea
                         className="form-control"
                         id="remarks"
@@ -1969,103 +2014,85 @@ function TokenGenerate() {
                         placeholder="Enter any remarks or additional information"
                       />
                     </div>
-                  </div>
-                  <br />
-                  <div className="row">
-                    <div className="col-md-3 form-group">
-                      <label
-                        className="form-check-label"
-                        htmlFor="isPatientContacted"
-                        style={{ color: "red" }}
-                      >
-                        Patient Contacted
-                      </label>
-                    </div>
-                    <div className="col-md-6 form-group form-check form-switch">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        id="isPatientContacted"
-                        checked={appointmentData.isPatientContacted}
-                        onChange={(e) =>
-                          setAppointmentData({
-                            ...appointmentData,
-                            isPatientContacted: e.target.checked,
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-                  <br />
-                  <div className="custom-modal-footer row">
-                    <div className="col-6 p-2">
-                      <button
-                        onClick={closeModal}
-                        className="btn btn-danger w-100"
-                        disabled={
-                          !appointmentData.id ||
-                          appointmentData.chitNo != null ||
-                          isClickedHandleSubmit
-                        }
-                      >
-                        Delete
-                      </button>
-                    </div>
-
-                    <div className="col-6 p-2">
-                      <button
-                        onClick={(e) => handleSubmit(e, false, false)}
-                        className="btn btn-success w-100"
-                        disabled={isClickedHandleSubmit}
-                      >
-                        {!appointmentData.id ? "Create" : "Update"}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="custom-modal-footer row">
-                    <div className="col-4 p-2">
-                      {appointmentData.chitNo != null && (
+                    <div className="col-12">
+                      <div className="form-check form-switch">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          role="switch"
+                          id="isPatientContacted"
+                          checked={appointmentData.isPatientContacted}
+                          onChange={(e) =>
+                            setAppointmentData({
+                              ...appointmentData,
+                              isPatientContacted: e.target.checked,
+                            })
+                          }
+                        />
                         <label
-                          style={{
-                            fontSize: "18px",
-                            fontWeight: "bold",
-                            color: "red",
-                          }}
+                          className="form-check-label"
+                          htmlFor="isPatientContacted"
+                          style={{ color: "red" }}
                         >
-                          Chit No: {appointmentData.chitNo}
+                          Patient Contacted
                         </label>
-                      )}
-                    </div>
-                    <div className="col-4 p-2">&nbsp;</div>
-                    <div className="col-4 p-2">
-                      <button
-                        onClick={(e) => handleSubmit(e, true, false)}
-                        className="btn btn-secondary w-100"
-                        disabled={
-                          !appointmentData.id ||
-                          appointmentData.chitNo != null ||
-                          isClickedHandleSubmit
-                        }
-                      >
-                        Issue Token
-                      </button>
+                      </div>
                     </div>
                   </div>
-                  <div className="custom-modal-footer row">
-                    <div className="col-12 p-2">
-                      <button
-                        type="button"
-                        className="btn btn-info w-100"
-                        disabled={
-                          appointmentData.chitNo == null ||
-                          appointmentData.childAppointments.length != 0
-                        }
-                        onClick={() => openNextAppointmentModal()}
-                      >
-                        Create Next Appointment
-                      </button>
-                    </div>
-                  </div>
+                </div>
+
+                <div className="d-flex flex-wrap align-items-center gap-2 px-3 py-2 bg-light border-top flex-shrink-0">
+                  {appointmentData.chitNo != null && (
+                    <span
+                      style={{
+                        fontSize: "18px",
+                        fontWeight: "bold",
+                        color: "red",
+                      }}
+                    >
+                      Chit No: {appointmentData.chitNo}
+                    </span>
+                  )}
+                  <button
+                    onClick={closeModal}
+                    className="btn btn-danger w-auto me-auto"
+                    disabled={
+                      !appointmentData.id ||
+                      appointmentData.chitNo != null ||
+                      isClickedHandleSubmit
+                    }
+                  >
+                    Delete
+                  </button>
+                  <button
+                    onClick={(e) => handleSubmit(e, true, false)}
+                    className="btn btn-secondary w-auto"
+                    disabled={
+                      !appointmentData.id ||
+                      appointmentData.chitNo != null ||
+                      isClickedHandleSubmit
+                    }
+                  >
+                    Issue Token
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-info w-auto"
+                    disabled={
+                      appointmentData.chitNo == null ||
+                      appointmentData.childAppointments.length != 0
+                    }
+                    onClick={() => openNextAppointmentModal()}
+                  >
+                    Create Next Appointment
+                  </button>
+                  <button
+                    onClick={(e) => handleSubmit(e, false, false)}
+                    className="btn btn-success w-auto"
+                    disabled={isClickedHandleSubmit}
+                  >
+                    {!appointmentData.id ? "Create" : "Update"}
+                  </button>
                 </div>
               </form>
             )}
@@ -2086,25 +2113,21 @@ function TokenGenerate() {
             type={notification.type}
             onClose={() => setNotification({ message: "", type: "" })}
           />
-          <div className="modal-content custom-modal-content">
-            <div className="modal-header custom-modal-header row">
-              <div className="col-md-8">
-                <h5 className="modal-title custom-modal-title">
-                  Create Next Appointment
-                </h5>
-              </div>
-              <div className="col-2">
+          <div
+            className="modal-content custom-modal-content d-flex flex-column p-0 overflow-hidden"
+            style={{ maxHeight: "90vh" }}
+          >
+            <div className="modal-header custom-modal-header d-flex align-items-center gap-3 flex-shrink-0 px-3 py-2">
+              <h5 className="modal-title m-0 fs-5 fw-semibold text-nowrap">
+                Create Next Appointment
+              </h5>
+              <div className="flex-grow-1">
                 <input
-                  className="form-control"
+                  className="form-control text-center fs-5 fw-bold"
                   type="text"
                   id="tokenNo"
                   name="tokenNo"
-                  style={{
-                    textAlign: "center",
-                    fontSize: "20px",
-                    fontWeight: "bold",
-                    backgroundColor: "#ffc107",
-                  }}
+                  style={{ backgroundColor: "#ffc107" }}
                   value={nextAppointmentData.tokenNo}
                   onChange={(e) =>
                     setNextAppointmentData({
@@ -2113,50 +2136,97 @@ function TokenGenerate() {
                     })
                   }
                 />
+                {nextAppBackendErrors.tokenNo && (
+                  <div style={{ color: "red", fontSize: "14px" }}>
+                    {nextAppBackendErrors.tokenNo}
+                  </div>
+                )}
               </div>
-              <div className="col-md-2">
-                <button
-                  type="button"
-                  className="close custom-close"
-                  onClick={() => setIsNextAppointmentModalOpen(false)}
-                >
-                  <span>&times;</span>
-                </button>
-              </div>
+              <button
+                type="button"
+                className="btn-close"
+                aria-label="Close"
+                onClick={() => setIsNextAppointmentModalOpen(false)}
+              />
             </div>
-            <div className="row">
-              {nextAppBackendErrors.tokenNo && (
-                <div style={{ color: "red", fontSize: "14px" }}>
-                  {nextAppBackendErrors.tokenNo}
-                </div>
-              )}
-            </div>
-            <div className="modal-body custom-modal-body">
-              <div className="row">
-                <div className="col-md-6 form-group">
-                  <label>Customer Name</label>
+
+            <div className="flex-grow-1 overflow-auto px-3 py-3">
+              <h6 className="text-uppercase text-muted fw-semibold small border-bottom pb-1 mb-3">
+                Customer
+              </h6>
+              <div className="row g-3 mb-4">
+                <div className="col-md-6">
+                  <label className="form-label">Customer Name</label>
                   <input
                     type="text"
-                    className="form-control"
+                    className="form-control bg-light"
                     value={nextAppointmentData.customerName}
                     readOnly
                   />
                 </div>
-                <div className="col-md-6 form-group">
-                  <label>Contact Number</label>
+                <div className="col-md-6">
+                  <label className="form-label">Contact Number</label>
                   <input
                     type="text"
-                    className="form-control"
+                    className="form-control bg-light"
                     value={nextAppointmentData.contactNo}
                     readOnly
                   />
                 </div>
               </div>
-              <div className="row">
-                <div className="col-md-6 form-group">
-                  <label>Location Type</label>
+
+              <h6 className="text-uppercase text-muted fw-semibold small border-bottom pb-1 mb-3">
+                Treatment
+              </h6>
+              <div className="row g-3 mb-4">
+                <div className="col-12">
+                  <label className="form-label">Treatment Type(s)</label>
+                  <Autocomplete
+                    multiple
+                    size="small"
+                    // login.css sets `button { width: 100% }`, which stacks these icons
+                    slotProps={{
+                      clearIndicator: { className: "w-auto" },
+                      popupIndicator: { className: "w-auto" },
+                    }}
+                    options={treatmentTypes}
+                    getOptionLabel={treatmentLabel}
+                    value={treatmentTypes.filter((type) =>
+                      nextAppointmentData.treatmentTypeId.includes(type.id),
+                    )}
+                    onChange={(event, value) =>
+                      setNextAppointmentData({
+                        ...nextAppointmentData,
+                        treatmentTypeId: value.map((v) => v.id),
+                      })
+                    }
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        variant="outlined"
+                        placeholder={
+                          nextAppointmentData.treatmentTypeId.length
+                            ? ""
+                            : "Select treatment type(s)"
+                        }
+                      />
+                    )}
+                    required
+                  />
+                  {nextAppointmentData.treatmentTypeId.length > 0 && (
+                    <EstimatedFee amount={nextEstimatedFee} />
+                  )}
+                </div>
+              </div>
+
+              <h6 className="text-uppercase text-muted fw-semibold small border-bottom pb-1 mb-3">
+                Schedule
+              </h6>
+              <div className="row g-3 mb-4">
+                <div className="col-md-6">
+                  <label className="form-label">Location Type</label>
                   <select
-                    className="form-control"
+                    className="form-select"
                     value={nextAppointmentData.locationType}
                     onChange={(e) =>
                       setNextAppointmentData({
@@ -2169,71 +2239,11 @@ function TokenGenerate() {
                     <option value="2">Elite Care</option>
                   </select>
                 </div>
-                <div className="col-md-6 form-group">
-                  <label>Treatment Type(s)</label>
-                  <Autocomplete
-                    multiple
-                    options={treatmentTypes}
-                    getOptionLabel={(option) =>
-                      option.treatmentShortCode
-                        ? `${option.name} - ${option.treatmentShortCode}`
-                        : option.name
-                    }
-                    value={treatmentTypes.filter((type) =>
-                      nextAppointmentData.treatmentTypeId.includes(type.id),
-                    )}
-                    onChange={(event, value) =>
-                      setNextAppointmentData({
-                        ...nextAppointmentData,
-                        treatmentTypeId: value.map((v) => v.id),
-                      })
-                    }
-                    renderInput={(params) => (
-                      <TextField {...params} variant="outlined" />
-                    )}
-                    required
-                  />
-                </div>
-              </div>
-              <div className="row">
-                <div className="col-md-6 form-group">
-                  <label>Schedule Date</label>&nbsp;&nbsp;&nbsp;
-                  <DatePicker
-                    selected={nextAppointmentData.scheduleDate}
-                    onChange={(date) =>
-                      setNextAppointmentData({
-                        ...nextAppointmentData,
-                        scheduleDate: date,
-                      })
-                    }
-                    className="form-control"
-                    dateFormat="MMMM d, yyyy"
-                  />
-                </div>
-
-                <div className="col-md-6 form-group">
-                  <label>Start Time</label>&nbsp;&nbsp;&nbsp;
-                  <DatePicker
-                    selected={nextAppointmentData.startTime}
-                    onChange={(date) =>
-                      handleNextAppointmentTimeChange(date, "startTime")
-                    }
-                    showTimeSelect
-                    showTimeSelectOnly
-                    timeIntervals={15}
-                    timeCaption="Time"
-                    dateFormat="h:mm aa"
-                    className="form-control"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="row">
                 {nextAppointmentData.locationType == "2" && (
-                  <div className="col-md-6 form-group">
-                    <label>Treatment Location</label>
+                  <div className="col-md-6">
+                    <label className="form-label">Treatment Location</label>
                     <select
-                      className="form-control"
+                      className="form-select"
                       value={nextAppointmentData.locationId}
                       onChange={(e) =>
                         setNextAppointmentData({
@@ -2251,12 +2261,12 @@ function TokenGenerate() {
                     </select>
                   </div>
                 )}
-              </div>
-              <div className="row">
-                <div className="col-md-6 form-group">
-                  <label htmlFor="employeeId">Employee</label>
+                <div className="col-12">
+                  <label htmlFor="employeeId" className="form-label">
+                    Employee
+                  </label>
                   <select
-                    className={`form-control ${formErrors.employeeId ? "is-invalid" : ""}`}
+                    className={`form-select ${formErrors.employeeId ? "is-invalid" : ""}`}
                     id="employeeId"
                     name="employeeId"
                     value={nextAppointmentData.employeeId}
@@ -2276,54 +2286,82 @@ function TokenGenerate() {
                     ))}
                   </select>
                 </div>
-              </div>
-              <br />
-              <div className="row">
-                <div className="col-md-3 form-group">
-                  <label
-                    className="form-check-label"
-                    htmlFor="followUpNeed"
-                    style={{ color: "red" }}
-                  >
-                    Follow Up Need
-                  </label>
-                </div>
-                <div className="col-md-6 form-group form-check form-switch">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id="followUpNeed"
-                    checked={nextAppointmentData.isNeededToFollowUp}
-                    onChange={(e) =>
+                <div className="col-md-6">
+                  <label className="form-label">Schedule Date</label>
+                  <DatePicker
+                    wrapperClassName="w-100"
+                    selected={nextAppointmentData.scheduleDate}
+                    onChange={(date) =>
                       setNextAppointmentData({
                         ...nextAppointmentData,
-                        isNeededToFollowUp: e.target.checked,
+                        scheduleDate: date,
                       })
                     }
+                    className="form-control"
+                    dateFormat="MMMM d, yyyy"
+                  />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Start Time</label>
+                  <DatePicker
+                    wrapperClassName="w-100"
+                    selected={nextAppointmentData.startTime}
+                    onChange={(date) =>
+                      handleNextAppointmentTimeChange(date, "startTime")
+                    }
+                    showTimeSelect
+                    showTimeSelectOnly
+                    timeIntervals={15}
+                    timeCaption="Time"
+                    dateFormat="h:mm aa"
+                    className="form-control"
+                    required
                   />
                 </div>
               </div>
-              <br />
+
+              <h6 className="text-uppercase text-muted fw-semibold small border-bottom pb-1 mb-3">
+                Other
+              </h6>
+              <div className="form-check form-switch">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  role="switch"
+                  id="followUpNeed"
+                  checked={nextAppointmentData.isNeededToFollowUp}
+                  onChange={(e) =>
+                    setNextAppointmentData({
+                      ...nextAppointmentData,
+                      isNeededToFollowUp: e.target.checked,
+                    })
+                  }
+                />
+                <label
+                  className="form-check-label"
+                  htmlFor="followUpNeed"
+                  style={{ color: "red" }}
+                >
+                  Follow Up Need
+                </label>
+              </div>
             </div>
-            <div className="modal-footer custom-modal-footer row">
-              <div className="col-md-6">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setIsNextAppointmentModalOpen(false)}
-                >
-                  Cancel
-                </button>
-              </div>
-              <div className="col-md-6">
-                <button
-                  type="button"
-                  className="btn btn-success"
-                  onClick={handleNextAppointmentSubmit}
-                >
-                  Create Next Appointment
-                </button>
-              </div>
+
+            <div className="d-flex justify-content-end gap-2 px-3 py-2 bg-light border-top flex-shrink-0">
+              <button
+                type="button"
+                className="btn btn-secondary w-auto"
+                onClick={() => setIsNextAppointmentModalOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-success w-auto"
+                onClick={handleNextAppointmentSubmit}
+              >
+                Create Next Appointment
+              </button>
             </div>
           </div>
         </div>
