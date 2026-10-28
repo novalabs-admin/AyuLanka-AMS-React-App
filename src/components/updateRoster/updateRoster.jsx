@@ -130,6 +130,7 @@ function UpdateRoster() {
 
     const handleSuccessClose = () => {
         setSuccessModalOpen(false);
+        handleCancel(); // back to the start state (this used to be the full page reload)
     };
 
     const handleErrorClose = () => {

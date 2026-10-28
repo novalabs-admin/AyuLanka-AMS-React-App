@@ -50,7 +50,7 @@ function ApproveDayOffs() {
 
     const handleApproval = async (isApproved) => {
         if (isApproved === null) {
-            window.location.reload(); // Reload the page
+            fetchPendingDayOffs(); // Cancel: re-read the list and clear the selection, no page reload
             return;
         }
         setLoading(true);

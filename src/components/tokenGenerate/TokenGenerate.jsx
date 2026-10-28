@@ -136,41 +136,44 @@ function TokenGenerate() {
   const startHour = Number(process.env.REACT_APP_APPOINTMENT_START_HOUR) || 7; // 7 AM
   const totalTokens = rows * cols;
 
-  useEffect(() => {
-    const loadAppointments = async () => {
-      try {
-        setLoadingTokens(true);
-        const tokens = await fetchTokensByDate(selectedDate);
-        setBookedTokens(tokens.filter((t) => t.doctorSessionId === null));
-        console.log("tokens:", tokens);
-        // setState(appointments) if you want to store them
-      } catch (err) {
-        console.error("Failed to fetch tokens:", err);
-      } finally {
-        setLoadingTokens(false);
-      }
-    };
+  // Booked tokens for the selected date. Kept as a function so a save/delete can refresh the grid
+  // in place (refreshAppointments) instead of reloading the whole page.
+  const loadBookedTokens = useCallback(async () => {
+    try {
+      setLoadingTokens(true);
+      const tokens = await fetchTokensByDate(selectedDate);
+      setBookedTokens(tokens.filter((t) => t.doctorSessionId === null));
+      console.log("tokens:", tokens);
+    } catch (err) {
+      console.error("Failed to fetch tokens:", err);
+    } finally {
+      setLoadingTokens(false);
+    }
+  }, [selectedDate]);
 
-    loadAppointments();
+  useEffect(() => {
+    loadBookedTokens();
+  }, [loadBookedTokens]);
+
+  // Elite Care appointments for the selected date (only used when locationType is "2").
+  const loadEliteAppointments = useCallback(async () => {
+    try {
+      const appointments = await fetchAppointmentsByDateRange(
+        selectedDate,
+        selectedDate,
+      );
+      console.log("setEliteAppointments", appointments);
+      setEliteAppointments(appointments); // Format as needed for FullCalendar
+    } catch (error) {
+      console.error("Error fetching events for date range:", error);
+    }
   }, [selectedDate]);
 
   useEffect(() => {
     if (locationType === "2") {
-      const loadAppointments = async () => {
-        try {
-          const appointments = await fetchAppointmentsByDateRange(
-            selectedDate,
-            selectedDate,
-          );
-          console.log("setEliteAppointments", appointments);
-          setEliteAppointments(appointments); // Format as needed for FullCalendar
-        } catch (error) {
-          console.error("Error fetching events for date range:", error);
-        }
-      };
-
-      loadAppointments();
+      loadEliteAppointments();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locationType]);
 
   const handlePatientSearch = useCallback(async (inputValue) => {
@@ -936,7 +939,7 @@ function TokenGenerate() {
     setIsClickedHandleSubmit(false);
     refreshAppointments(); // Fetch appointments again or adjust state directly
     setModalIsOpen(false);
-    resetAppointmentForm(); // Clear or reset the form state
+    resetAppointmentForm({ keepResultModal: true }); // Clear the form but keep the success popup
     setSelectedResource({});
     // }
   };
@@ -1219,11 +1222,17 @@ function TokenGenerate() {
     return appStart >= workStart && appEnd <= workEnd;
   }
 
+  // Re-read what the screen shows after a save/delete, in place (no page reload).
   const refreshAppointments = async () => {
-    window.location.reload();
+    await loadBookedTokens();
+    if (locationType === "2") {
+      await loadEliteAppointments();
+    }
   };
 
-  const resetAppointmentForm = () => {
+  // keepResultModal: after a save the success popup must stay on screen. Without the page reload that
+  // used to wipe it, this reset would otherwise hide it straight away.
+  const resetAppointmentForm = ({ keepResultModal = false } = {}) => {
     setAppointmentData({
       id: undefined,
       scheduleDate: new Date(),
@@ -1258,8 +1267,10 @@ function TokenGenerate() {
     setSelectedResource({});
     setIsConfirmModalOpen(false);
     setIsConfirmModalOpenForValidation(false);
-    setShowModal(false);
-    setModalContent({ type: "", message: "" });
+    if (!keepResultModal) {
+      setShowModal(false);
+      setModalContent({ type: "", message: "" });
+    }
     setStartTime(new Date());
     setEndTime(new Date());
     setActualStartTime(null);
@@ -1305,13 +1316,20 @@ function TokenGenerate() {
     setIsConfirmed(true);
   };
 
+  // OK / X on the success-or-error popup. It used to share closeModal (which opens the delete
+  // confirmation) and relied on the page reload to hide that again; now it only closes the popup.
+  const closeResultModal = () => {
+    setShowModal(false);
+    setModalContent({ type: "", message: "" });
+  };
+
   const closeModal = () => {
     console.log("Opening confirmation modal");
     setIsConfirmModalOpen(true); // This should trigger the modal to open
   };
 
   const closeModalAndReset = () => {
-    refreshAppointments(); // Refresh appointments or reset state as needed
+    // Closing/cancelling changes nothing on the server, so no refresh (and no page reload) is needed.
     resetAppointmentForm(); // Reset form and all necessary states
     setSelectedResource({}); // Reset selected resource
     setModalIsOpen(false); // Close the modal
@@ -1841,9 +1859,15 @@ function TokenGenerate() {
                         multiple
                         options={treatmentTypes}
                         getOptionLabel={(option) =>
-                          option.treatmentShortCode
-                            ? `${option.name} - ${option.treatmentShortCode}`
-                            : option.name
+                          [
+                            option.name,
+                            option.treatmentShortCode,
+                            option.unitPrice != null && option.unitPrice !== ""
+                              ? `Rs. ${option.unitPrice}`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" - ")
                         } // Adjust based on your data structure
                         value={treatmentTypes.filter((type) =>
                           appointmentData.treatmentTypeId.includes(type.id),
@@ -2338,7 +2362,7 @@ function TokenGenerate() {
 
       <AppointmentModalComponent
         show={showModal}
-        onClose={closeModal}
+        onClose={closeResultModal}
         type={modalContent.type}
         message={modalContent.message}
       />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import resourceTimeGridPlugin from "@fullcalendar/resource-timegrid";
@@ -121,7 +121,11 @@ function AppointmentScheduler() {
     loadData();
   }, []);
 
+  // Last calendar range FullCalendar asked for, so refreshAppointments can re-read the same range in place.
+  const lastRangeRef = useRef(null);
+
   const handleDatesSet = async (dateInfo) => {
+    lastRangeRef.current = dateInfo;
     const { startStr, endStr } = dateInfo;
     try {
       const appointments = await fetchAppointmentsByDateRange(startStr, endStr);
@@ -674,18 +678,21 @@ function AppointmentScheduler() {
 
     refreshAppointments(); // Fetch appointments again or adjust state directly
     setModalIsOpen(false);
-    resetAppointmentForm(); // Clear or reset the form state
+    resetAppointmentForm({ keepResultModal: true }); // Clear the form but keep the success popup
     setSelectedResource({});
     // }
   };
 
+  // Re-read the visible calendar range in place (used to be a full page reload).
   const refreshAppointments = async () => {
-    window.location.reload();
-    // const updatedAppointments = await fetchAppointments();
-    // setCurrentEvents(formatAppointments(updatedAppointments));
+    if (lastRangeRef.current) {
+      await handleDatesSet(lastRangeRef.current);
+    }
   };
 
-  const resetAppointmentForm = () => {
+  // keepResultModal: after a save the success popup must stay on screen (the page reload that used to
+  // wipe it is gone). The calendar events are NOT cleared here; refreshAppointments re-reads them.
+  const resetAppointmentForm = ({ keepResultModal = false } = {}) => {
     setAppointmentData({
       id: undefined,
       scheduleDate: new Date(),
@@ -711,14 +718,15 @@ function AppointmentScheduler() {
       treatmentTypeId: false,
       scheduleDate: false,
     });
-    setCurrentEvents([]);
     setDropEvent([]);
     setModalIsOpen(false);
     setSelectedResource({});
     setIsConfirmModalOpen(false);
     setIsConfirmModalOpenForValidation(false);
-    setShowModal(false);
-    setModalContent({ type: "", message: "" });
+    if (!keepResultModal) {
+      setShowModal(false);
+      setModalContent({ type: "", message: "" });
+    }
     setStartTime(new Date());
     setEndTime(new Date());
     setActualStartTime(null);
@@ -1036,7 +1044,7 @@ function AppointmentScheduler() {
       console.log("Appointment created:", createdAppointment);
       refreshAppointments(); // Fetch appointments again or adjust state directly
       setModalIsOpen(false);
-      resetAppointmentForm(); // Clear or reset the form state
+      resetAppointmentForm({ keepResultModal: true }); // Clear the form but keep the success popup
       setSelectedResource({});
     } catch (error) {
       console.error("Failed to update appointment:", error);
@@ -1099,6 +1107,16 @@ function AppointmentScheduler() {
     isClickedHandleSubmit,
     isEventDrop,
   ]);
+
+  // OK / X on the success-or-error popup. It used to share closeModal (which opens the delete
+  // confirmation) and relied on the page reload to hide that again; now it only closes the popup.
+  // After an error the calendar is re-read, so an event dragged to a slot that failed to save snaps back.
+  const closeResultModal = () => {
+    const wasError = modalContent.type === "error";
+    setShowModal(false);
+    setModalContent({ type: "", message: "" });
+    if (wasError) refreshAppointments();
+  };
 
   const closeModal = () => {
     console.log("Opening confirmation modal");
@@ -1878,7 +1896,7 @@ function AppointmentScheduler() {
 
       <AppointmentModalComponent
         show={showModal}
-        onClose={closeModal}
+        onClose={closeResultModal}
         type={modalContent.type}
         message={modalContent.message}
       />
