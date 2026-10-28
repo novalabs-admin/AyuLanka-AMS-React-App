@@ -164,6 +164,17 @@ function ChangeDayOff() {
 
             console.log('Sending Data:', dataToSend);
             await updateDayOff(dataToSend);  // Assuming updateDayOff sends the data to the backend correctly
+            // clear the form and re-read the pending list (this used to be the full page reload on OK)
+            setReason('');
+            setSelectedEmployee('');
+            setSelectedEmployee2('');
+            setSelectedRosterId('');
+            setDayOffs([]);
+            setDayOffs2({});
+            setNewDayOffs({});
+            setNewDayOffs2({});
+            setSubmitAttempted(false);
+            getPendingDayOffs().then(setPendingApprovals).catch(setError);
             setSuccessModalOpen(true); // Open success modal
         } catch (error) {
             setError(error.toString());

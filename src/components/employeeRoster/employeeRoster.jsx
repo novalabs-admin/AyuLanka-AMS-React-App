@@ -54,6 +54,7 @@ function EmployeeRoster() {
 
     const handleSuccessClose = () => {
         setSuccessModalOpen(false);
+        handleCancel(); // back to the start state and re-read data (this used to be the full page reload)
     };
 
     const handleErrorClose = () => {
@@ -188,11 +189,19 @@ function EmployeeRoster() {
     };
 
 
+    // Back to the start state without a page reload. Giving startDate/endDate new Date objects re-runs
+    // the effect above, which re-reads employees, shifts, leaves and the existing roster dates
+    // (so a roster that was just saved is already in the list).
     const handleCancel = () => {
-        // Reset all changes or navigate away
         setShowRoster(false);
         setCheckboxStates({});
-        window.location.reload();
+        setDays([]);
+        setSelectedEmployee('');
+        setSelectedEmploymentType('');
+        setSelectedShift('');
+        setLeaveData({});
+        setStartDate(new Date());
+        setEndDate(new Date());
     };
 
     const handleSubmit = async () => {

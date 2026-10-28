@@ -96,6 +96,13 @@ function ChangeShift() {
 
             console.log('Sending Data:', dataToSend);
             await updateShift(dataToSend); // Assuming updateShift sends the data to your backend correctly
+            // clear the form and re-read the pending list (this used to be the full page reload on OK)
+            setSelectedRosterId('');
+            setSelectedEmployee('');
+            setReason('');
+            setEmployeeShifts([]);
+            setSubmitAttempted(false);
+            getPendingShifts().then(setPendingApprovals).catch(setError);
             setSuccessModalOpen(true); // Open success modal
         } catch (error) {
             setError(error.toString());

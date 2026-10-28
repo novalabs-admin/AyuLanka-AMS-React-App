@@ -31,9 +31,9 @@ const AppointmentModalComponent = ({ show, onClose, type, message }) => {
         : defaultErrorMessage;
   };
 
+  // OK only closes the popup (it used to reload the page); each screen refreshes itself in its onClose.
   const handleOKClick = () => {
-    onClose(); // Close the modal
-    window.location.reload(); // Reload the page
+    onClose();
   };
 
   return (

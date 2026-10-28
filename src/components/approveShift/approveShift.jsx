@@ -50,7 +50,7 @@ function ApproveShift() {
 
     const handleApproval = async (isApproved) => {
         if (isApproved === null) {
-            window.location.reload(); // Reload the page
+            fetchPendingShifts(); // Cancel: re-read the list and clear the selection, no page reload
             return;
         }
 

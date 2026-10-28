@@ -17,9 +17,10 @@ const ModalComponent = ({ show, onClose, type, message }) => {
         return message ? message : (type === 'success' ? defaultSuccessMessage : defaultErrorMessage);
     };
 
+    // OK only closes the popup. It used to reload the whole page (also for error popups, which threw
+    // away whatever the user had typed); each screen now refreshes or resets itself in its onClose.
     const handleOKClick = () => {
-        onClose(); // Close the modal
-        window.location.reload(); // Reload the page
+        onClose();
     };
 
     return (
