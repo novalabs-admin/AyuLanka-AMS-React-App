@@ -35,7 +35,7 @@ import CreateCustomerModal, {
 Modal.setAppElement("#root");
 
 // "Name - CODE - Rs. 1400" label for a treatment type option
-const treatmentLabel = (option) =>
+export const treatmentLabel = (option) =>
   [
     option.name,
     option.treatmentShortCode,
@@ -46,7 +46,7 @@ const treatmentLabel = (option) =>
     .filter(Boolean)
     .join(" - ");
 
-const EstimatedFee = ({ amount }) => (
+export const EstimatedFee = ({ amount }) => (
   <div className="d-flex justify-content-between align-items-center mt-2 px-3 py-2 bg-light border rounded">
     <span>
       Estimated Fee <small className="text-muted">(may vary)</small>
@@ -67,6 +67,7 @@ function TokenGenerate() {
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [selectedResource, setSelectedResource] = useState({});
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [isConfirmIssueOpen, setIsConfirmIssueOpen] = useState(false);
   const [isConfirmModalOpenForValidation, setIsConfirmModalOpenForValidation] =
     useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -1449,7 +1450,9 @@ function TokenGenerate() {
       .filter((type) => treatmentTypeIds.includes(type.id))
       .reduce((sum, type) => sum + (Number(type.unitPrice) || 0), 0);
   const estimatedFee = calcEstimatedFee(appointmentData.treatmentTypeId);
-  const nextEstimatedFee = calcEstimatedFee(nextAppointmentData.treatmentTypeId);
+  const nextEstimatedFee = calcEstimatedFee(
+    nextAppointmentData.treatmentTypeId,
+  );
 
   const handleCreateCustomer = async () => {
     try {
@@ -2065,8 +2068,9 @@ function TokenGenerate() {
                     Delete
                   </button>
                   <button
-                    onClick={(e) => handleSubmit(e, true, false)}
-                    className="btn btn-secondary w-auto"
+                    type="button"
+                    onClick={() => setIsConfirmIssueOpen(true)}
+                    className="btn btn-outline-primary w-auto"
                     disabled={
                       !appointmentData.id ||
                       appointmentData.chitNo != null ||
@@ -2390,6 +2394,17 @@ function TokenGenerate() {
         isOpen={isConfirmModalOpen}
         onClose={() => setIsConfirmModalOpen(false)}
         onConfirm={handleDelete}
+      />
+
+      <ConfirmationModal
+        isOpen={isConfirmIssueOpen}
+        headerMessage="Confirm Issue Token"
+        bodyMessage="Are you sure you want to issue a token for this appointment?"
+        onClose={() => setIsConfirmIssueOpen(false)}
+        onConfirm={() => {
+          setIsConfirmIssueOpen(false);
+          handleSubmit(null, true, false);
+        }}
       />
 
       <ConfirmationModalForValidation
