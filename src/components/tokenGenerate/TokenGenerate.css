@@ -138,3 +138,27 @@
         font-size: 1.2rem;
     }
 }
+/* Primary call-to-action in the appointment modals (TokenGenerate + channelingAppointment).
+   Solid indigo so it stands apart from the red Delete, cyan, and green Create/Update buttons. */
+.btn.btn-issue-token {
+    background-color: #4338ca;
+    border-color: #3730a3;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: 0.02em;
+    padding: 0.5rem 1.5rem;
+    box-shadow: 0 4px 12px rgba(67, 56, 202, 0.45);
+}
+
+.btn.btn-issue-token:hover:not(:disabled),
+.btn.btn-issue-token:focus-visible {
+    background-color: #3730a3;
+    border-color: #312e81;
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(67, 56, 202, 0.6);
+}
+
+.btn.btn-issue-token:disabled {
+    box-shadow: none;
+}
