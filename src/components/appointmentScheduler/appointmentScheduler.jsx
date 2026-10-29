@@ -5,6 +5,7 @@ import resourceTimeGridPlugin from "@fullcalendar/resource-timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import Modal from "react-modal";
 import DatePicker from "react-datepicker";
+import TimeInput from "../common/TimeInput";
 import "react-datepicker/dist/react-datepicker.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./appointmentScheduler.css"; // Ensure this file contains your custom styles
@@ -1666,16 +1667,11 @@ function AppointmentScheduler() {
                       Start Time <span className="text-danger">*</span>
                     </label>
                     <br />
-                    <DatePicker
+                    <TimeInput
                       disabled={!appointmentData.id}
-                      className="form-control"
-                      selected={startTime}
+                      baseDate={appointmentData.scheduleDate}
+                      value={startTime}
                       onChange={(date) => handleTimeChange(date, "startTime")}
-                      showTimeSelect
-                      showTimeSelectOnly
-                      timeIntervals={15}
-                      timeCaption="Time"
-                      dateFormat="h:mm aa"
                     />
                   </div>
                   <div className="col-md-3 col-sm-3 form-group">
@@ -1683,16 +1679,11 @@ function AppointmentScheduler() {
                       End Time <span className="text-danger">*</span>
                     </label>
                     <br />
-                    <DatePicker
+                    <TimeInput
                       disabled={!appointmentData.id}
-                      className="form-control"
-                      selected={endTime}
+                      baseDate={appointmentData.scheduleDate}
+                      value={endTime}
                       onChange={(date) => handleTimeChange(date, "endTime")}
-                      showTimeSelect
-                      showTimeSelectOnly
-                      timeIntervals={15}
-                      timeCaption="Time"
-                      dateFormat="h:mm aa"
                     />
                   </div>
                 </div>
@@ -1719,35 +1710,25 @@ function AppointmentScheduler() {
                   <div className="col-md-3 col-sm-3 form-group">
                     <label htmlFor="actualStartTime">Actual Start Time</label>
                     <br />
-                    <DatePicker
+                    <TimeInput
                       disabled={!appointmentData.id}
-                      className="form-control"
-                      selected={actualStartTime}
+                      allowClear
+                      baseDate={appointmentData.scheduleDate}
+                      value={actualStartTime}
                       onChange={(date) =>
-                        handleActualTimeChange(date, "actualStartTime")
-                      }
-                      showTimeSelect
-                      showTimeSelectOnly
-                      timeIntervals={15}
-                      timeCaption="Time"
-                      dateFormat="h:mm aa"
+                        handleActualTimeChange(date, "actualStartTime")}
                     />
                   </div>
                   <div className="col-md-3 col-sm-3 form-group">
                     <label htmlFor="actualEndTime">Actual End Time</label>
                     <br />
-                    <DatePicker
+                    <TimeInput
                       disabled={!appointmentData.id}
-                      className="form-control"
-                      selected={actualEndTime}
+                      allowClear
+                      baseDate={appointmentData.scheduleDate}
+                      value={actualEndTime}
                       onChange={(date) =>
-                        handleActualTimeChange(date, "actualEndTime")
-                      }
-                      showTimeSelect
-                      showTimeSelectOnly
-                      timeIntervals={15}
-                      timeCaption="Time"
-                      dateFormat="h:mm aa"
+                        handleActualTimeChange(date, "actualEndTime")}
                     />
                   </div>
                 </div>
@@ -1777,41 +1758,31 @@ function AppointmentScheduler() {
                       Actual Start Time
                     </label>
                     <br />
-                    <DatePicker
+                    <TimeInput
                       disabled={!appointmentData.id}
-                      className="form-control"
-                      selected={actualSecondStartTime}
+                      allowClear
+                      baseDate={appointmentData.scheduleDate}
+                      value={actualSecondStartTime}
                       onChange={(date) =>
                         handleActualSecondTimeChange(
                           date,
                           "actualSecondStartTime",
-                        )
-                      }
-                      showTimeSelect
-                      showTimeSelectOnly
-                      timeIntervals={15}
-                      timeCaption="Time"
-                      dateFormat="h:mm aa"
+                        )}
                     />
                   </div>
                   <div className="col-md-3 col-sm-3 form-group">
                     <label htmlFor="actualSecondEndTime">Actual End Time</label>
                     <br />
-                    <DatePicker
+                    <TimeInput
                       disabled={!appointmentData.id}
-                      className="form-control"
-                      selected={actualSecondEndTime}
+                      allowClear
+                      baseDate={appointmentData.scheduleDate}
+                      value={actualSecondEndTime}
                       onChange={(date) =>
                         handleActualSecondTimeChange(
                           date,
                           "actualSecondEndTime",
-                        )
-                      }
-                      showTimeSelect
-                      showTimeSelectOnly
-                      timeIntervals={15}
-                      timeCaption="Time"
-                      dateFormat="h:mm aa"
+                        )}
                     />
                   </div>
                 </div>
