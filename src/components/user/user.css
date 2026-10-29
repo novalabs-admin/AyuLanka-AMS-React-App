@@ -127,3 +127,64 @@
   overflow-y: auto;
   overflow-x: hidden;
 }
+
+/* Employee search + list polish */
+.employee-search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.employee-search .form-control {
+  flex: 1;
+}
+
+.employee-count {
+  color: #6c757d;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.employee-table {
+  margin-bottom: 0;
+}
+
+.employee-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: #f8f9fa;
+  color: #16A085;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.employee-table tbody td {
+  vertical-align: middle;
+}
+
+.employee-table tbody tr:hover > * {
+  background-color: #e8f6f3;
+}
+
+.employee-name {
+  font-weight: 600;
+}
+
+.employee-sub {
+  color: #6c757d;
+  font-size: 13px;
+}
+
+.employee-table td.actions {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}

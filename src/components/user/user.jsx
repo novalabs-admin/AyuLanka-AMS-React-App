@@ -17,6 +17,8 @@ function UserTemplate(props) {
     companies,
     isSuperAdmin,
     users,
+    searchTerm,
+    onSearchChange,
     successModalOpen,
     handleSuccessClose,
     errorModalOpen,
@@ -38,6 +40,14 @@ function UserTemplate(props) {
 
   // Returns true when the field is empty AND the user has tried to submit
   const shouldShowError = (field) => !currentUser[field] && submitAttempted;
+
+  // Case-insensitive match on the fields staff actually look people up by
+  const term = (searchTerm || "").trim().toLowerCase();
+  const filteredUsers = term
+    ? users.filter((u) =>
+        [u.employeeNumber, u.fullName, u.callingName, u.nic, u.username]
+          .some((v) => String(v ?? "").toLowerCase().includes(term)))
+    : users;
 
   return (
     <div className="container">
@@ -118,11 +128,26 @@ function UserTemplate(props) {
         {/* ── Table column ── */}
         <div className="col-md-7 table-column">
           <h2 className="employees-header">Employees</h2>
+          <div className="employee-search">
+            <input
+              type="search"
+              className="form-control"
+              placeholder="Search by name, employee no., NIC or username"
+              aria-label="Search employees"
+              value={searchTerm}
+              onChange={(e) => onSearchChange(e.target.value)}
+            />
+            <span className="employee-count">
+              {term ? `${filteredUsers.length} of ${users.length}` : users.length} employees
+            </span>
+          </div>
           <div className="table-scrollable">
             {users.length === 0 ? (
               <EmptyState title="No employees yet" message="Create the first employee using the form." />
+            ) : filteredUsers.length === 0 ? (
+              <EmptyState title="No matches" message={`No employees match "${searchTerm.trim()}".`} />
             ) : (
-              <table className="table table-striped">
+              <table className="table table-striped employee-table">
                 <thead>
                   <tr>
                     <th>Employee</th>
@@ -132,24 +157,27 @@ function UserTemplate(props) {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((user) => (
+                  {filteredUsers.map((user) => (
                     <tr key={user.id}>
-                      <td>{user.employeeNumber} - {user.callingName}</td>
+                      <td>
+                        <div className="employee-name">{user.callingName || user.fullName || "-"}</div>
+                        <div className="employee-sub">{[user.employeeNumber, user.username].filter(Boolean).join(" · ")}</div>
+                      </td>
                       <td>{user.nic}</td>
                       {isSuperAdmin && <td>{user.company?.name ?? user.companyId}</td>}
                       <td className="actions">
-                        <button className="btn btn-sm btn-success"
-                          onClick={() => props.editUser(user)}
-                          style={{ backgroundColor: '#28a745' }}>
-                          Edit
-                        </button>
-                        {isSuperAdmin && (
-                          <button className="btn btn-sm btn-warning ms-1"
-                            onClick={() => props.requestResetPassword(user)}
-                            style={{ marginLeft: '4px' }}>
-                            Reset Password
+                        <div className="action-buttons">
+                          <button className="btn btn-sm btn-success"
+                            onClick={() => props.editUser(user)}>
+                            Edit
                           </button>
-                        )}
+                          {isSuperAdmin && (
+                            <button className="btn btn-sm btn-warning"
+                              onClick={() => props.requestResetPassword(user)}>
+                              Reset Password
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

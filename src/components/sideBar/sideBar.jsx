@@ -204,6 +204,7 @@ const Sidebar = () => {
           {(designationCode === "SAD" ||
             designationCode === "AD" ||
             designationCode === "ADT" ||
+            designationCode === "MA" ||
             designationCode === "RP") && (
             <li className={isGroupOpen("report") ? "active" : ""}>
               <span onClick={() => toggleMenu("report")}>Reports</span>
@@ -275,6 +276,7 @@ const Sidebar = () => {
           {(designationCode === "SAD" ||
             designationCode === "AD" ||
             designationCode === "RP" ||
+            designationCode === "MA" ||
             designationCode === "ADT") && (
             <>
               <li>
