@@ -19,6 +19,10 @@ import AppointmentModalComponent from "../appointmentModalComponent/appointmentM
 import CreateCustomerModal, {
   LOCAL_COUNTRY_ID,
 } from "../modalComponent/createCustomerModal.jsx";
+import {
+  treatmentLabel,
+  EstimatedFee,
+} from "../tokenGenerate/TokenGenerate.jsx";
 
 Modal.setAppElement("#root");
 
@@ -51,6 +55,14 @@ const ChannelingAppointment = () => {
   // Booking modal state
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  // Sum of the selected treatments' unit prices (an estimate; actual fee can vary)
+  const estimatedFee = form.appoinmentTreatments.reduce(
+    (sum, t) =>
+      sum +
+      (Number(treatmentTypes.find((x) => x.id === t.TreatmentTypeId)?.unitPrice) ||
+        0),
+    0,
+  );
   const [selectedTokenNo, setSelectedTokenNo] = useState(null);
   const [selectedEventId, setSelectedEventId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -71,6 +83,7 @@ const ChannelingAppointment = () => {
 
   // Confirmation / result modals
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+  const [isConfirmIssueOpen, setIsConfirmIssueOpen] = useState(false);
   const [showResultModal, setShowResultModal] = useState(false);
   const [resultModal, setResultModal] = useState({ type: "", message: "" });
 
@@ -756,16 +769,16 @@ const ChannelingAppointment = () => {
                     >
                       {treatmentTypes.map((t) => (
                         <option key={t.id} value={String(t.id)}>
-                          {t.name}
-                          {t.treatmentShortCode
-                            ? ` - ${t.treatmentShortCode}`
-                            : ""}
+                          {treatmentLabel(t)}
                         </option>
                       ))}
                     </select>
                     <small className="text-muted">
                       Hold Ctrl/Cmd to select multiple
                     </small>
+                    {form.appoinmentTreatments.length > 0 && (
+                      <EstimatedFee amount={estimatedFee} />
+                    )}
                   </div>
                 </div>
 
@@ -857,9 +870,9 @@ const ChannelingAppointment = () => {
                   <div className="col-12 p-2">
                     <button
                       type="button"
-                      className="btn btn-secondary w-100"
+                      className="btn btn-outline-primary w-100"
                       disabled={!form.id || form.chitNo != null || isSubmitting}
-                      onClick={(e) => handleSubmit(e, true)}
+                      onClick={() => setIsConfirmIssueOpen(true)}
                     >
                       Issue Token
                     </button>
@@ -896,6 +909,18 @@ const ChannelingAppointment = () => {
         isOpen={isConfirmDeleteOpen}
         onClose={() => setIsConfirmDeleteOpen(false)}
         onConfirm={handleDelete}
+      />
+
+      {/* ── Issue token confirmation ───────────────────────────────────────── */}
+      <ConfirmationModal
+        isOpen={isConfirmIssueOpen}
+        headerMessage="Confirm Issue Token"
+        bodyMessage="Are you sure you want to issue a token for this appointment?"
+        onClose={() => setIsConfirmIssueOpen(false)}
+        onConfirm={() => {
+          setIsConfirmIssueOpen(false);
+          handleSubmit(null, true);
+        }}
       />
 
       {/* ── Success / Error result modal ───────────────────────────────────── */}

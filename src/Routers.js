@@ -1,5 +1,10 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
 
 import Login from "./components/login";
 import Sidebar from "./components/sideBar/sideBar";
@@ -40,7 +45,7 @@ const Layout = ({ children }) => {
   return (
     <div className="app-container">
       {!isLoginPage && <Sidebar />}
-      <div className={`main-content ${isLoginPage ? 'full-width' : ''}`}>
+      <div className={`main-content ${isLoginPage ? "full-width" : ""}`}>
         {!isLoginPage && <Breadcrumb />}
         {children}
       </div>
@@ -62,9 +67,18 @@ const Routers = () => {
         <Route path="/employee-roster" element={<EmployeeRoster />} />
         <Route path="/token-generate" element={<TokenGenerate />} />
         <Route path="/token-dashboard" element={<TokenDashboard />} />
-        <Route path="/appoinment-schedular-elitecare" element={<AppointmentScheduler />} />
-        <Route path="/appoinment-schedular-primecare" element={<AppointmentSchedulerPrimeCare />} />
-        <Route path="/appoinment-schedular-doctorechanneling" element={<AppointmentSchedulerDoctorChanneling />} />
+        <Route
+          path="/appoinment-schedular-elitecare"
+          element={<AppointmentScheduler />}
+        />
+        <Route
+          path="/appoinment-schedular-primecare"
+          element={<AppointmentSchedulerPrimeCare />}
+        />
+        <Route
+          path="/appoinment-schedular-doctorechanneling"
+          element={<AppointmentSchedulerDoctorChanneling />}
+        />
         <Route path="/update-roster" element={<UpdateRoster />} />
         <Route path="/approve-roster" element={<ApproveRoster />} />
         <Route path="/view-roster" element={<ViewRoster />} />
@@ -72,12 +86,27 @@ const Routers = () => {
         <Route path="/approve-dayoff" element={<ApproveDayOff />} />
         <Route path="/change-shift" element={<ChangeShift />} />
         <Route path="/approve-shift" element={<ApproveShift />} />
-        <Route path="/deleted-appointment-report" element={<DeletedAppointmentReport />} />
+        <Route
+          path="/deleted-appointment-report"
+          element={<DeletedAppointmentReport />}
+        />
         <Route path="/appointment-report" element={<AppointmentReport />} />
-        <Route path="/unlinked-appointment-report" element={<UnlinkedAppointmentReport />} />
-        <Route path="/staff-appointment-summary-report" element={<StaffWiseAppointmentSummaryReport />} />
-        <Route path="/staff-treatment-summary-report" element={<StaffWiseTreatmentSummaryReport />} />
-        <Route path="/appointment-completion-rate-report" element={<AppointmentCompletionRateReport />} />
+        <Route
+          path="/unlinked-appointment-report"
+          element={<UnlinkedAppointmentReport />}
+        />
+        <Route
+          path="/staff-appointment-summary-report"
+          element={<StaffWiseAppointmentSummaryReport />}
+        />
+        <Route
+          path="/staff-treatment-summary-report"
+          element={<StaffWiseTreatmentSummaryReport />}
+        />
+        <Route
+          path="/appointment-completion-rate-report"
+          element={<AppointmentCompletionRateReport />}
+        />
         <Route path="/doctor-sessions" element={<DoctorSessionManager />} />
         <Route path="/channeling" element={<ChannelingAppointment />} />
         <Route path="/logout" element={<Logout />} />

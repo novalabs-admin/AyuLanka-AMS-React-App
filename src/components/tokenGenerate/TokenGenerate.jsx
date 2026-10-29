@@ -35,7 +35,7 @@ import CreateCustomerModal, {
 Modal.setAppElement("#root");
 
 // "Name - CODE - Rs. 1400" label for a treatment type option
-const treatmentLabel = (option) =>
+export const treatmentLabel = (option) =>
   [
     option.name,
     option.treatmentShortCode,
@@ -46,7 +46,7 @@ const treatmentLabel = (option) =>
     .filter(Boolean)
     .join(" - ");
 
-const EstimatedFee = ({ amount }) => (
+export const EstimatedFee = ({ amount }) => (
   <div className="d-flex justify-content-between align-items-center mt-2 px-3 py-2 bg-light border rounded">
     <span>
       Estimated Fee <small className="text-muted">(may vary)</small>
@@ -67,6 +67,7 @@ function TokenGenerate() {
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [selectedResource, setSelectedResource] = useState({});
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [isConfirmIssueOpen, setIsConfirmIssueOpen] = useState(false);
   const [isConfirmModalOpenForValidation, setIsConfirmModalOpenForValidation] =
     useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -114,6 +115,15 @@ function TokenGenerate() {
   const [actualSecondEndTime, setActualSecondEndTime] = useState(null);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [isClickedHandleSubmit, setIsClickedHandleSubmit] = useState(false);
+
+  // Drop stale customer/contact errors once the user picks a customer or edits the number
+  useEffect(() => {
+    setFormErrors((prev) =>
+      prev.customerName || prev.contactNo
+        ? { ...prev, customerName: false, contactNo: false }
+        : prev,
+    );
+  }, [appointmentData.customerId, appointmentData.contactNo]);
 
   const [selectedDate, setSelectedDate] = useState(
     moment().format("YYYY-MM-DD"),
@@ -569,12 +579,17 @@ function TokenGenerate() {
         setSelectedEliteAppointment(appointmentData);
       }
     } else {
-      // If token is free, populate only tokenNo and date
+      // If token is free, populate tokenNo, date and default start time (now)
+      const now = new Date();
       setAppointmentData((prevState) => ({
         ...prevState,
         tokenNo: tokenNumber,
         scheduleDate: selectedDate, // keep current selected date
+        startTime: now,
+        endTime: now,
       }));
+      setStartTime(now);
+      setEndTime(now);
     }
 
     setModalIsOpen(true);
@@ -585,30 +600,24 @@ function TokenGenerate() {
 
     if (name === "startTime") {
       setNotification({ message: "", type: "" });
+      setFormErrors((prev) => ({ ...prev, startTime: !date }));
+      setStartTime(date);
 
-      // Check required fields and set errors
-      const errors = {
-        customerName: !appointmentData.customerName,
-        contactNo: !appointmentData.contactNo,
-        treatmentTypeId: !appointmentData.treatmentTypeId,
-        // employeeId: !appointmentData.employeeId,
-        scheduleDate: !appointmentData.scheduleDate,
-      };
-
-      setFormErrors(errors);
-
-      // If any field has an error, stop the form submission
-      if (Object.values(errors).some((error) => error)) {
-        console.log("Validation errors", errors);
+      // Cleared input: drop start/end so submit validation flags it
+      if (!date) {
+        setEndTime(null);
+        setAppointmentData((prevState) => ({
+          ...prevState,
+          startTime: null,
+          endTime: null,
+        }));
         return;
       }
-
-      setStartTime(date);
 
       let totalDurationMilliseconds = 0; // Initialize total duration for multiple treatments
 
       // Iterate over the selected treatment type IDs
-      appointmentData.treatmentTypeId.forEach((option) => {
+      (appointmentData.treatmentTypeId || []).forEach((option) => {
         // Find the treatment that matches the selected treatmentTypeId inside the treatmentType object
         const selectedTreatment = treatmentTypes.find((t) => t.id == option);
         console.log(
@@ -660,30 +669,19 @@ function TokenGenerate() {
     if (name === "startTime") {
       setNotification({ message: "", type: "" });
 
-      // Check required fields and set errors
-      const errors = {
-        customerName: !nextAppointmentData.customerName,
-        contactNo: !nextAppointmentData.contactNo,
-        treatmentTypeId: !nextAppointmentData.treatmentTypeId,
-        // employeeId: !appointmentData.employeeId,
-        scheduleDate: !nextAppointmentData.scheduleDate,
-        startTime: !appointmentData.startTime,
-      };
-
-      setFormErrors(errors);
-
-      // If any field has an error, stop the form submission
-      if (Object.values(errors).some((error) => error)) {
-        console.log("Validation errors", errors);
+      if (!date) {
+        setNextAppointmentData((prevState) => ({
+          ...prevState,
+          startTime: null,
+          endTime: null,
+        }));
         return;
       }
-
-      setStartTime(date);
 
       let totalDurationMilliseconds = 0; // Initialize total duration for multiple treatments
 
       // Iterate over the selected treatment type IDs
-      nextAppointmentData.treatmentTypeId.forEach((option) => {
+      (nextAppointmentData.treatmentTypeId || []).forEach((option) => {
         // Find the treatment that matches the selected treatmentTypeId inside the treatmentType object
         const selectedTreatment = treatmentTypes.find((t) => t.id == option);
         console.log(
@@ -793,6 +791,19 @@ function TokenGenerate() {
     }
   };
 
+  // <input type="time"> works in "HH:mm"; the rest of the form uses Date objects
+  const dateToTimeValue = (d) =>
+    d
+      ? `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
+      : "";
+  const timeValueToDate = (value, baseDate) => {
+    if (!value) return null;
+    const [h, m] = value.split(":").map(Number);
+    const d = new Date(baseDate || new Date());
+    d.setHours(h, m, 0, 0);
+    return d;
+  };
+
   function formatTimeForCSharp(date) {
     console.log("formatTimeForCSharp", date);
     const hours = date.getHours().toString().padStart(2, "0");
@@ -832,6 +843,7 @@ function TokenGenerate() {
     // If any field has an error, stop the form submission
     if (Object.values(errors).some((error) => error)) {
       console.log("Validation errors", errors);
+      setIsClickedHandleSubmit(false); // re-enable the button after a failed validation
       return;
     }
     const userId = sessionStorage.getItem("userId");
@@ -1449,7 +1461,9 @@ function TokenGenerate() {
       .filter((type) => treatmentTypeIds.includes(type.id))
       .reduce((sum, type) => sum + (Number(type.unitPrice) || 0), 0);
   const estimatedFee = calcEstimatedFee(appointmentData.treatmentTypeId);
-  const nextEstimatedFee = calcEstimatedFee(nextAppointmentData.treatmentTypeId);
+  const nextEstimatedFee = calcEstimatedFee(
+    nextAppointmentData.treatmentTypeId,
+  );
 
   const handleCreateCustomer = async () => {
     try {
@@ -1977,16 +1991,17 @@ function TokenGenerate() {
                       <label htmlFor="startTime" className="form-label">
                         Start Time <span className="text-danger">*</span>
                       </label>
-                      <DatePicker
-                        wrapperClassName="w-100"
-                        onChange={(date) => handleTimeChange(date, "startTime")}
+                      <input
+                        type="time"
+                        id="startTime"
                         className={`form-control ${formErrors.startTime ? "is-invalid" : ""}`}
-                        selected={startTime}
-                        showTimeSelect
-                        showTimeSelectOnly
-                        timeIntervals={15}
-                        timeCaption="Time"
-                        dateFormat="h:mm aa"
+                        value={dateToTimeValue(startTime)}
+                        onChange={(e) =>
+                          handleTimeChange(
+                            timeValueToDate(e.target.value, appointmentData.scheduleDate),
+                            "startTime",
+                          )
+                        }
                       />
                       {formErrors.startTime && (
                         <div className="text-danger small">
@@ -2065,8 +2080,9 @@ function TokenGenerate() {
                     Delete
                   </button>
                   <button
-                    onClick={(e) => handleSubmit(e, true, false)}
-                    className="btn btn-secondary w-auto"
+                    type="button"
+                    onClick={() => setIsConfirmIssueOpen(true)}
+                    className="btn btn-outline-primary w-auto"
                     disabled={
                       !appointmentData.id ||
                       appointmentData.chitNo != null ||
@@ -2303,18 +2319,16 @@ function TokenGenerate() {
                 </div>
                 <div className="col-md-6">
                   <label className="form-label">Start Time</label>
-                  <DatePicker
-                    wrapperClassName="w-100"
-                    selected={nextAppointmentData.startTime}
-                    onChange={(date) =>
-                      handleNextAppointmentTimeChange(date, "startTime")
-                    }
-                    showTimeSelect
-                    showTimeSelectOnly
-                    timeIntervals={15}
-                    timeCaption="Time"
-                    dateFormat="h:mm aa"
+                  <input
+                    type="time"
                     className="form-control"
+                    value={dateToTimeValue(nextAppointmentData.startTime)}
+                    onChange={(e) =>
+                      handleNextAppointmentTimeChange(
+                        timeValueToDate(e.target.value, nextAppointmentData.scheduleDate),
+                        "startTime",
+                      )
+                    }
                     required
                   />
                 </div>
@@ -2390,6 +2404,17 @@ function TokenGenerate() {
         isOpen={isConfirmModalOpen}
         onClose={() => setIsConfirmModalOpen(false)}
         onConfirm={handleDelete}
+      />
+
+      <ConfirmationModal
+        isOpen={isConfirmIssueOpen}
+        headerMessage="Confirm Issue Token"
+        bodyMessage="Are you sure you want to issue a token for this appointment?"
+        onClose={() => setIsConfirmIssueOpen(false)}
+        onConfirm={() => {
+          setIsConfirmIssueOpen(false);
+          handleSubmit(null, true, false);
+        }}
       />
 
       <ConfirmationModalForValidation

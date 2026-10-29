@@ -43,6 +43,7 @@ class User extends React.Component {
       resetPasswordUserName: "",
       newPassword: "",
       resetPasswordError: "",
+      searchTerm: "",
     };
   }
 
@@ -244,6 +245,8 @@ class User extends React.Component {
     return (
       <UserTemplate
         users={this.state.users}
+        searchTerm={this.state.searchTerm}
+        onSearchChange={(searchTerm) => this.setState({ searchTerm })}
         currentUser={this.state.currentUser}
         isEditing={this.state.isEditing}
         handleInputChange={this.handleInputChange}
