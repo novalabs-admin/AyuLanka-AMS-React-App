@@ -870,7 +870,7 @@ const ChannelingAppointment = () => {
                   <div className="col-12 p-2">
                     <button
                       type="button"
-                      className="btn btn-outline-primary w-100"
+                      className="btn btn-issue-token w-100"
                       disabled={!form.id || form.chitNo != null || isSubmitting}
                       onClick={() => setIsConfirmIssueOpen(true)}
                     >

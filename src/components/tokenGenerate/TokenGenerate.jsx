@@ -2082,7 +2082,7 @@ function TokenGenerate() {
                   <button
                     type="button"
                     onClick={() => setIsConfirmIssueOpen(true)}
-                    className="btn btn-outline-primary w-auto"
+                    className="btn btn-issue-token w-auto"
                     disabled={
                       !appointmentData.id ||
                       appointmentData.chitNo != null ||
