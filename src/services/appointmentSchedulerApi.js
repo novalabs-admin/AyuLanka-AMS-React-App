@@ -411,7 +411,8 @@ export const fetchTokensByDate = async (scheduledDate) => {
   const companyId = sessionStorage.getItem("companyId");
 
   try {
-    const params = { date: scDate.toISOString().substring(0, 10) };
+    // Local calendar date: toISOString() is UTC, which is the previous day for local times before 05:30 in Sri Lanka
+    const params = { date: formatDate(scDate) };
     if (companyId) params.companyId = companyId;
     const response = await api.get(`/appointmentschedule/tokensbydate`, { params });
     return response.data;

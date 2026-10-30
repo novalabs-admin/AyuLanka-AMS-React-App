@@ -61,6 +61,21 @@ export const EstimatedFee = ({ amount }) => (
   </div>
 );
 
+// Fresh "Create Next Appointment" form; a function so scheduleDate is today at the time of use
+const emptyNextAppointment = () => ({
+  customerName: "",
+  customerId: "",
+  contactNo: "",
+  locationType: "1",
+  locationId: "",
+  treatmentTypeId: [],
+  scheduleDate: new Date(),
+  employeeId: "",
+  startTime: null,
+  endTime: null,
+  isNeededToFollowUp: false,
+});
+
 function TokenGenerate() {
   const [currentEvents, setCurrentEvents] = useState([]);
   const [dropEvent, setDropEvent] = useState([]);
@@ -137,19 +152,8 @@ function TokenGenerate() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isNextAppointmentModalOpen, setIsNextAppointmentModalOpen] =
     useState(false);
-  const [nextAppointmentData, setNextAppointmentData] = useState({
-    customerName: "",
-    customerId: "",
-    contactNo: "",
-    locationType: "1",
-    locationId: "",
-    treatmentTypeId: [],
-    scheduleDate: new Date(),
-    employeeId: "",
-    startTime: null,
-    endTime: null,
-    isNeededToFollowUp: false,
-  });
+  const [nextAppointmentData, setNextAppointmentData] =
+    useState(emptyNextAppointment);
   const [availableLocations, setAvailableLocations] = useState([]);
   const [loadingTokens, setLoadingTokens] = useState(false);
 
@@ -166,6 +170,13 @@ function TokenGenerate() {
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
   const [backendErrors, setBackendErrors] = useState({});
   const [nextAppBackendErrors, setNextAppBackendErrors] = useState({});
+  // Tokens already booked on the Next Appointment date, and whether that list is usable.
+  // The token badge is validated against it, so a full hour / taken number disables saving.
+  const [nextTakenTokens, setNextTakenTokens] = useState([]);
+  const [nextTokensStatus, setNextTokensStatus] = useState("idle"); // idle | loading | ready | error
+  const [isSubmittingNext, setIsSubmittingNext] = useState(false);
+  // Required-field messages stay hidden until the first save attempt, then update live.
+  const [showNextFieldErrors, setShowNextFieldErrors] = useState(false);
 
   // Read values from env
   const rows = Number(process.env.REACT_APP_TOTAL_ROWS) || 17;
@@ -173,13 +184,75 @@ function TokenGenerate() {
   const startHour = Number(process.env.REACT_APP_APPOINTMENT_START_HOUR) || 7; // 7 AM
   const totalTokens = rows * cols;
 
+  // First token not yet booked in the hour block of `startTime` (hour N holds tokens N*cols+1..),
+  // or null if the hour is full or outside the grid. Doctor-channeling tokens are numbered separately.
+  const takenTokenNumbers = (tokens) =>
+    tokens
+      .filter((t) => t.doctorSessionId == null)
+      .map((t) => parseInt(t.tokenNo, 10));
+
+  const firstFreeTokenInHour = (tokens, startTime) => {
+    const hourIndex = new Date(startTime).getHours() - startHour;
+    if (hourIndex < 0 || hourIndex >= rows) return null;
+    const first = hourIndex * cols + 1;
+    const taken = new Set(takenTokenNumbers(tokens));
+    for (let n = first; n < first + cols; n++) {
+      if (!taken.has(n)) return n;
+    }
+    return null;
+  };
+
+  // Why `tokenNo` cannot be saved for a Next Appointment, or null when it is fine.
+  // Any free token 1..totalTokens is allowed (not only the start hour's block).
+  const getNextTokenError = (tokenNo, taken, scheduleDate) => {
+    const text = String(tokenNo ?? "").trim();
+    if (!text) {
+      return "No free token in this time slot. Pick another time or enter a free token.";
+    }
+    const n = Number(text);
+    if (!/^\d+$/.test(text) || n < 1 || n > totalTokens) {
+      return `Token must be a number between 1 and ${totalTokens}.`;
+    }
+    if (taken.includes(n)) {
+      return `Token ${n} is already booked for ${moment(scheduleDate).format("YYYY-MM-DD")}.`;
+    }
+    return null;
+  };
+
+  // Live state of the badge. No message while loading; the save button is blocked until "ready".
+  const nextTokenError =
+    nextTokensStatus === "ready"
+      ? getNextTokenError(
+          nextAppointmentData.tokenNo,
+          nextTakenTokens,
+          nextAppointmentData.scheduleDate,
+        )
+      : nextTokensStatus === "error"
+        ? "Could not check token availability. Re-select the date or time to retry."
+        : null;
+  // Required fields; the save button stays clickable so a click reveals what is missing.
+  const nextFieldErrors = {};
+  if (!nextAppointmentData.treatmentTypeId.length) {
+    nextFieldErrors.treatmentTypeId = "Select at least one treatment type.";
+  }
+  if (!nextAppointmentData.scheduleDate) {
+    nextFieldErrors.scheduleDate = "Select a schedule date.";
+  }
+  if (!nextAppointmentData.startTime) {
+    nextFieldErrors.startTime = "Select a start time.";
+  }
+  const nextFieldError = (field) =>
+    showNextFieldErrors ? nextFieldErrors[field] : undefined;
+  const canSubmitNext =
+    nextTokensStatus === "ready" && !nextTokenError && !isSubmittingNext;
+
   // Booked tokens for the selected date. Kept as a function so a save/delete can refresh the grid
   // in place (refreshAppointments) instead of reloading the whole page.
   const loadBookedTokens = useCallback(async () => {
     try {
       setLoadingTokens(true);
       const tokens = await fetchTokensByDate(selectedDate);
-      setBookedTokens(tokens.filter((t) => t.doctorSessionId === null));
+      setBookedTokens(tokens.filter((t) => t.doctorSessionId == null));
       console.log("tokens:", tokens);
     } catch (err) {
       console.error("Failed to fetch tokens:", err);
@@ -283,48 +356,48 @@ function TokenGenerate() {
     loadData();
   }, []);
 
+  // Suggest the first free token in the chosen hour. The cleanup flag drops a slow response that
+  // belongs to an older date/time so it cannot overwrite the newest suggestion.
   useEffect(() => {
+    let cancelled = false;
+    const { scheduleDate, startTime } = nextAppointmentData;
+
     const autoAssignNextToken = async () => {
-      if (!nextAppointmentData.scheduleDate || !nextAppointmentData.startTime)
-        return;
-
-      try {
-        // Fetch all tokens for that date (exclude doctor channeling appointments)
-        const allTokens = await fetchTokensByDate(
-          nextAppointmentData.scheduleDate,
+      if (!scheduleDate || !startTime) {
+        setNextTakenTokens([]);
+        setNextTokensStatus("idle");
+        setNextAppointmentData((prev) =>
+          prev.tokenNo == null ? prev : { ...prev, tokenNo: null },
         );
-        const tokens = allTokens.filter((t) => t.doctorSessionId === null);
+        return;
+      }
 
-        // Convert selected time to hour (e.g. 09:30 → 9)
-        const selectedHour = new Date(nextAppointmentData.startTime).getHours();
-
-        // Filter tokens that belong to that hour range
-        const startTokenNo = (selectedHour - startHour) * cols + 1;
-        const endTokenNo = startTokenNo + cols - 1;
-
-        const bookedInHour = tokens
-          .map((t) => parseInt(t.tokenNo, 10))
-          .filter((no) => no >= startTokenNo && no <= endTokenNo);
-
-        // Find next available token in that hour
-        let nextAvailable = null;
-        for (let i = startTokenNo; i <= endTokenNo; i++) {
-          if (!bookedInHour.includes(i)) {
-            nextAvailable = i;
-            break;
-          }
-        }
-
+      // Until this date's tokens arrive the old list is for another date: block saving.
+      setNextTokensStatus("loading");
+      try {
+        const allTokens = await fetchTokensByDate(scheduleDate);
+        if (cancelled) return;
+        setNextTakenTokens(takenTokenNumbers(allTokens));
+        setNextTokensStatus("ready");
         setNextAppointmentData((prev) => ({
           ...prev,
-          tokenNo: nextAvailable ?? null, // null if full
+          tokenNo: firstFreeTokenInHour(allTokens, startTime), // null if the hour is full
         }));
       } catch (err) {
+        if (cancelled) return;
         console.error("Failed to auto assign token:", err);
+        setNextTakenTokens([]);
+        setNextTokensStatus("error");
+        // Never keep a token suggested for a different date/time
+        setNextAppointmentData((prev) => ({ ...prev, tokenNo: null }));
       }
     };
 
     autoAssignNextToken();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nextAppointmentData.scheduleDate, nextAppointmentData.startTime]);
 
   useEffect(() => {
@@ -983,7 +1056,18 @@ function TokenGenerate() {
     // }
   };
 
+  // The in-flight flag disables the button, so a double click cannot send two requests.
   const handleNextAppointmentSubmit = async () => {
+    if (isSubmittingNext) return;
+    setIsSubmittingNext(true);
+    try {
+      await submitNextAppointment();
+    } finally {
+      setIsSubmittingNext(false);
+    }
+  };
+
+  const submitNextAppointment = async () => {
     const {
       scheduleDate,
       startTime,
@@ -995,20 +1079,56 @@ function TokenGenerate() {
       contactNo,
     } = nextAppointmentData;
 
-    if (
-      !scheduleDate ||
-      !startTime ||
-      !treatmentTypeId.length ||
-      !locationType ||
-      !customerName ||
-      !customerId ||
-      !contactNo
-    ) {
-      alert("Please fill all required fields.");
+    // Required fields are reported inline under each field (nextFieldErrors), not in an alert.
+    if (Object.keys(nextFieldErrors).length) {
+      setShowNextFieldErrors(true);
+      // Bring the first invalid field into view once the messages have rendered
+      requestAnimationFrame(() =>
+        document
+          .querySelector(".next-field-error")
+          ?.scrollIntoView({ behavior: "smooth", block: "center" }),
+      );
+      return;
+    }
+    // Filled from the selected appointment, so only missing if that appointment is incomplete
+    if (!locationType || !customerName || !customerId || !contactNo) {
+      setModalContent({
+        type: "error",
+        message: "Customer details are missing for this appointment.",
+      });
+      setShowModal(true);
       return;
     }
 
     setNextAppBackendErrors({});
+
+    // A token is mandatory, and another user may have taken it since it was shown: re-check against
+    // the latest list. If that list cannot be read, stop rather than risk a duplicate or empty token.
+    let latest;
+    try {
+      latest = await fetchTokensByDate(scheduleDate);
+    } catch (err) {
+      console.error("Token re-check failed:", err);
+      setNextAppBackendErrors({
+        tokenNo: "Could not verify the token. Please try again.",
+      });
+      return;
+    }
+    const latestTaken = takenTokenNumbers(latest);
+    const tokenError = getNextTokenError(
+      nextAppointmentData.tokenNo,
+      latestTaken,
+      scheduleDate,
+    );
+    if (tokenError) {
+      setNextTakenTokens(latestTaken);
+      setNextAppBackendErrors({ tokenNo: tokenError });
+      setNextAppointmentData((prev) => ({
+        ...prev,
+        tokenNo: firstFreeTokenInHour(latest, startTime),
+      }));
+      return;
+    }
 
     const userId = sessionStorage.getItem("userId");
 
@@ -1183,7 +1303,7 @@ function TokenGenerate() {
       ToTime: formatTimeForCSharp(nextAppointmentData.endTime),
       EnteredBy: userId,
       EnteredDate: new Date().toISOString(),
-      TokenNo: nextAppointmentData.tokenNo,
+      TokenNo: parseInt(nextAppointmentData.tokenNo, 10),
       LocationId:
         nextAppointmentData.locationId != ""
           ? nextAppointmentData.locationId
@@ -1380,12 +1500,18 @@ function TokenGenerate() {
   }, [appointmentData, locationType]);
 
   const openNextAppointmentModal = () => {
+    // Start from a blank form every time so nothing from a previously closed/cancelled attempt
+    // (treatments, location, employee, times, token, backend errors) carries over.
     setNextAppointmentData({
-      ...nextAppointmentData,
+      ...emptyNextAppointment(),
       customerName: appointmentData.customerName,
       customerId: appointmentData.customerId,
       contactNo: appointmentData.contactNo,
     });
+    setNextAppBackendErrors({});
+    setNextTakenTokens([]);
+    setNextTokensStatus("idle");
+    setShowNextFieldErrors(false);
     setIsNextAppointmentModalOpen(true);
   };
 
@@ -1998,7 +2124,10 @@ function TokenGenerate() {
                         value={dateToTimeValue(startTime)}
                         onChange={(e) =>
                           handleTimeChange(
-                            timeValueToDate(e.target.value, appointmentData.scheduleDate),
+                            timeValueToDate(
+                              e.target.value,
+                              appointmentData.scheduleDate,
+                            ),
                             "startTime",
                           )
                         }
@@ -2139,31 +2268,42 @@ function TokenGenerate() {
               </h5>
               <div className="flex-grow-1">
                 <input
-                  className="form-control text-center fs-5 fw-bold"
+                  className={`form-control text-center fs-5 fw-bold${
+                    nextTokenError || nextAppBackendErrors.tokenNo
+                      ? " is-invalid"
+                      : ""
+                  }`}
                   type="text"
+                  inputMode="numeric"
                   id="tokenNo"
                   name="tokenNo"
                   style={{ backgroundColor: "#ffc107" }}
-                  value={nextAppointmentData.tokenNo}
-                  onChange={(e) =>
+                  placeholder={
+                    nextTokensStatus === "loading"
+                      ? "Checking..."
+                      : "No free token"
+                  }
+                  value={nextAppointmentData.tokenNo ?? ""}
+                  onChange={(e) => {
+                    setNextAppBackendErrors({});
                     setNextAppointmentData({
                       ...nextAppointmentData,
-                      tokenNo: e.target.value,
-                    })
-                  }
+                      tokenNo: e.target.value.replace(/\D/g, ""),
+                    });
+                  }}
                 />
-                {nextAppBackendErrors.tokenNo && (
+                {(nextTokenError || nextAppBackendErrors.tokenNo) && (
                   <div style={{ color: "red", fontSize: "14px" }}>
-                    {nextAppBackendErrors.tokenNo}
+                    {nextTokenError || nextAppBackendErrors.tokenNo}
                   </div>
                 )}
               </div>
-              <button
+              {/* <button
                 type="button"
                 className="btn-close"
                 aria-label="Close"
                 onClick={() => setIsNextAppointmentModalOpen(false)}
-              />
+              /> */}
             </div>
 
             <div className="flex-grow-1 overflow-auto px-3 py-3">
@@ -2220,6 +2360,7 @@ function TokenGenerate() {
                       <TextField
                         {...params}
                         variant="outlined"
+                        error={!!nextFieldError("treatmentTypeId")}
                         placeholder={
                           nextAppointmentData.treatmentTypeId.length
                             ? ""
@@ -2229,6 +2370,14 @@ function TokenGenerate() {
                     )}
                     required
                   />
+                  {nextFieldError("treatmentTypeId") && (
+                    <div
+                      className="next-field-error"
+                      style={{ color: "red", fontSize: "14px" }}
+                    >
+                      {nextFieldError("treatmentTypeId")}
+                    </div>
+                  )}
                   {nextAppointmentData.treatmentTypeId.length > 0 && (
                     <EstimatedFee amount={nextEstimatedFee} />
                   )}
@@ -2313,24 +2462,43 @@ function TokenGenerate() {
                         scheduleDate: date,
                       })
                     }
-                    className="form-control"
+                    className={`form-control${nextFieldError("scheduleDate") ? " is-invalid" : ""}`}
                     dateFormat="MMMM d, yyyy"
                   />
+                  {nextFieldError("scheduleDate") && (
+                    <div
+                      className="next-field-error"
+                      style={{ color: "red", fontSize: "14px" }}
+                    >
+                      {nextFieldError("scheduleDate")}
+                    </div>
+                  )}
                 </div>
                 <div className="col-md-6">
                   <label className="form-label">Start Time</label>
                   <input
                     type="time"
-                    className="form-control"
+                    className={`form-control${nextFieldError("startTime") ? " is-invalid" : ""}`}
                     value={dateToTimeValue(nextAppointmentData.startTime)}
                     onChange={(e) =>
                       handleNextAppointmentTimeChange(
-                        timeValueToDate(e.target.value, nextAppointmentData.scheduleDate),
+                        timeValueToDate(
+                          e.target.value,
+                          nextAppointmentData.scheduleDate,
+                        ),
                         "startTime",
                       )
                     }
                     required
                   />
+                  {nextFieldError("startTime") && (
+                    <div
+                      className="next-field-error"
+                      style={{ color: "red", fontSize: "14px" }}
+                    >
+                      {nextFieldError("startTime")}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -2373,6 +2541,7 @@ function TokenGenerate() {
                 type="button"
                 className="btn btn-success w-auto"
                 onClick={handleNextAppointmentSubmit}
+                disabled={!canSubmitNext}
               >
                 Create Next Appointment
               </button>
