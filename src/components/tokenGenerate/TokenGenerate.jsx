@@ -61,6 +61,10 @@ export const EstimatedFee = ({ amount }) => (
   </div>
 );
 
+// The API returns soft-deleted children too; a deleted next appointment must not block creating a new one.
+const activeChildAppointments = (children) =>
+  (children || []).filter((c) => c.isDeleted !== true);
+
 // Fresh "Create Next Appointment" form; a function so scheduleDate is today at the time of use
 const emptyNextAppointment = () => ({
   customerName: "",
@@ -639,7 +643,7 @@ function TokenGenerate() {
           existing.appointmentTreatments?.map((t) => t.treatmentTypeId) || [],
         remarks: existing.remarks,
         appoinmentTreatments: existing.appointmentTreatments || [],
-        childAppointments: existing.childAppointments || [],
+        childAppointments: activeChildAppointments(existing.childAppointments),
         IsNeededToFollowUp: existing.isNeededToFollowUp,
         isPatientContacted: existing.isPatientContacted,
       });
@@ -1898,7 +1902,9 @@ function TokenGenerate() {
                               : [],
                             appoinmentTreatments:
                               appt.appointmentTreatments || [],
-                            childAppointments: appt.childAppointments || [],
+                            childAppointments: activeChildAppointments(
+                              appt.childAppointments,
+                            ),
                             IsNeededToFollowUp: appt.isNeededToFollowUp,
                             isPatientContacted: appt.isPatientContacted,
                           });
