@@ -303,6 +303,22 @@ export const fetchAllAppointmentsByDateRange = async (startDate, endDate) => {
   }
 };
 
+// Patients whose latest issued-token visit in the range has no (live) next appointment.
+// Dates are "YYYY-MM-DD" strings passed through as-is, so no timezone shift.
+export const fetchUnlinkedAppointments = async (startDate, endDate) => {
+  const companyId = sessionStorage.getItem("companyId");
+
+  try {
+    const params = { startDate, endDate };
+    if (companyId) params.companyId = companyId;
+    const response = await api.get(`/appointmentschedule/unlinkedappointments`, { params });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching unlinked appointments:", error);
+    throw error;
+  }
+};
+
 export const fetchAllDashboardChartsDatabyDateRange = async (startDate, endDate) => {
   console.log(startDate, ' ', endDate)
 
