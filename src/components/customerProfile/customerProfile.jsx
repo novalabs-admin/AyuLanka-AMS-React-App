@@ -64,20 +64,35 @@ const CustomerProfilePage = ({ customerId, show, onClose }) => {
   useEffect(() => {
     if (!selectedCustomer || customerId) return;
 
+    // Ignore a slow response if the customer was cleared or changed meanwhile
+    let cancelled = false;
+
     const fetchProfile = async () => {
       try {
         setLoadingProfile(true);
         const data = await fetchCustomerProfile(selectedCustomer.id);
-        setAppointments(data);
+        if (!cancelled) setAppointments(data);
       } catch (err) {
         console.error("Failed to fetch customer profile:", err);
       } finally {
-        setLoadingProfile(false);
+        if (!cancelled) setLoadingProfile(false);
       }
     };
 
     fetchProfile();
+    return () => {
+      cancelled = true;
+    };
   }, [selectedCustomer, customerId]);
+
+  // Back to the search box for another customer (no page refresh needed)
+  const handleClearSearch = () => {
+    setSelectedCustomer(null);
+    setAppointments([]);
+    setSearchTerm('');
+    setSearchResults([]);
+    setLoadingProfile(false);
+  };
 
   return (
     <div className="p-3">
@@ -125,6 +140,18 @@ const CustomerProfilePage = ({ customerId, show, onClose }) => {
       {selectedCustomer && (
         <Card className="mb-4 shadow-sm">
           <Card.Body>
+            {/* Only on the standalone page; when a parent passes customerId the customer is fixed */}
+            {!customerId && (
+              <div className="d-flex justify-content-end mb-2">
+                <button
+                  type="button"
+                  className="btn btn-outline-primary btn-sm w-auto"
+                  onClick={handleClearSearch}
+                >
+                  Clear &amp; Search Again
+                </button>
+              </div>
+            )}
             <Row>
               <Col md={6}>
                 <h5>Patient Name:</h5>
