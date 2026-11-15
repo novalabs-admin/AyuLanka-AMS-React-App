@@ -303,6 +303,22 @@ export const fetchAllAppointmentsByDateRange = async (startDate, endDate) => {
   }
 };
 
+// Slim per-appointment rows for the Appointment Report (only the fields the report shows).
+// Dates are "YYYY-MM-DD" strings passed through as-is, so no timezone shift.
+export const fetchAppointmentReport = async (startDate, endDate) => {
+  const companyId = sessionStorage.getItem("companyId");
+
+  try {
+    const params = { startDate, endDate };
+    if (companyId) params.companyId = companyId;
+    const response = await api.get(`/appointmentschedule/appointmentreport`, { params });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching appointment report:", error);
+    throw error;
+  }
+};
+
 // Patients whose latest issued-token visit in the range has no (live) next appointment.
 // Dates are "YYYY-MM-DD" strings passed through as-is, so no timezone shift.
 export const fetchUnlinkedAppointments = async (startDate, endDate) => {
