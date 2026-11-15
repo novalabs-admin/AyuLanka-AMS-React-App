@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import * as XLSX from 'xlsx'; // Import XLSX library
 import './appointmentReport.css';
-import { fetchAllAppointmentsByDateRange } from '../../../services/appointmentSchedulerApi';
+import { fetchAppointmentReport } from '../../../services/appointmentSchedulerApi';
 import SkeletonTable from '../../common/SkeletonTable';
 import EmptyState from '../../common/EmptyState';
 
@@ -14,30 +14,23 @@ const AppointmentReport = () => {
     const [loading, setLoading] = useState(false);
     const [fetched, setFetched] = useState(false);
 
-    const fetchAppointments = async (date) => {
+    const fetchAppointments = async () => {
         if (!startDate || !endDate) {
             alert('Please select both start and end dates.');
+            return;
+        }
+        if (startDate > endDate) {
+            alert('Start date must be before end date.');
             return;
         }
         setLoading(true);
         setFetched(false);
         try {
-            const start = new Date(startDate); // Convert to Date object
-            const end = new Date(endDate);     // Convert to Date object
-            const data = await fetchAllAppointmentsByDateRange(start, end);
-
-            //const data = await fetchAppoitmentByDate(date);
-
-            const sortedData = data.sort((a, b) => {
-                const tokenA = a.tokenNo !== null ? parseInt(a.tokenNo, 10) : Infinity;
-                const tokenB = b.tokenNo !== null ? parseInt(b.tokenNo, 10) : Infinity;
-                return tokenA - tokenB;
-            });
-
-            console.log(sortedData);
-            setAppointments(sortedData);
+            // Rows arrive slim and already ordered (date, then token) by the server
+            setAppointments(await fetchAppointmentReport(startDate, endDate));
         } catch (error) {
-            console.error('Error fetching day offs data:', error);
+            console.error('Error fetching appointment report:', error);
+            setAppointments([]);
         } finally {
             setLoading(false);
             setFetched(true);
@@ -85,18 +78,19 @@ const AppointmentReport = () => {
             (appointment.tokenNo !== null && appointment.tokenNo.toString().includes(searchTerm)) || // Check Token Number
             (appointment.customerName && appointment.customerName.toLowerCase().includes(searchTerm.toLowerCase())) || // Check Customer Name
             (appointment.contactNo && appointment.contactNo.includes(searchTerm)) || // Check Contact No
-            (appointment.employee?.callingName && appointment.employee.callingName.toLowerCase().includes(searchTerm.toLowerCase())) || // Check Employee
-            (appointment.secondaryEmployee?.callingName && appointment.secondaryEmployee.callingName.toLowerCase().includes(searchTerm.toLowerCase())) || // Check Secondary Employee
-            (appointment.location?.name && appointment.location.name.toLowerCase().includes(searchTerm.toLowerCase())) || // Check Location
-            (appointment.appointmentTreatments.some(treatment => treatment.treatmentType.name.toLowerCase().includes(searchTerm.toLowerCase()))) || // Check Treatment Types
+            (appointment.employeeName && appointment.employeeName.toLowerCase().includes(searchTerm.toLowerCase())) || // Check Employee
+            (appointment.secondaryEmployeeName && appointment.secondaryEmployeeName.toLowerCase().includes(searchTerm.toLowerCase())) || // Check Secondary Employee
+            (appointment.locationName && appointment.locationName.toLowerCase().includes(searchTerm.toLowerCase())) || // Check Location
+            ((appointment.treatmentTypes || []).some(name => name.toLowerCase().includes(searchTerm.toLowerCase()))) || // Check Treatment Types
+            ((appointment.itemModes || []).some(name => name.toLowerCase().includes(searchTerm.toLowerCase()))) || // Check Item Modes
             (appointment.scheduleDate && appointment.scheduleDate.split('T')[0].includes(searchTerm)) || // Check Scheduled Date
             (appointment.fromTime && appointment.fromTime.includes(searchTerm)) || // Check Start Time
             (appointment.toTime && appointment.toTime.includes(searchTerm)) || // Check End Time
             (appointment.actualFromTime && `${appointment.actualFromTime} - ${appointment.actualToTime}`.includes(searchTerm)) || // Check Actual Start & End Time
-            (appointment.actualFromTime && appointment.actualToTime ? calculateDuration(appointment.actualFromTime, appointment.actualToTime) : '0h:0m'.includes(searchTerm)) ||
+            (appointment.actualFromTime && appointment.actualToTime ? calculateDuration(appointment.actualFromTime, appointment.actualToTime) : '0h:0m').includes(searchTerm) || // Check Duration
             (appointment.remarks && appointment.remarks.toLowerCase().includes(searchTerm.toLowerCase())) || // Check Remarks
             (appointment.tokenIssueTime && formatDateTime(appointment.tokenIssueTime).includes(searchTerm)) || // Check Token Issued Date & Time
-            (appointment.enteredByEmployee?.callingName && appointment.enteredByEmployee.callingName.toLowerCase().includes(searchTerm.toLowerCase())) || // Check Entered By
+            (appointment.enteredByName && appointment.enteredByName.toLowerCase().includes(searchTerm.toLowerCase())) || // Check Entered By
             (appointment.enteredDate && formatDateTime(appointment.enteredDate).includes(searchTerm)) // Check Entered Date & Time
         );
     });
@@ -147,6 +141,7 @@ const AppointmentReport = () => {
                                     <th>Secondary Employee</th>
                                     <th>Location</th>
                                     <th>Treatment Types</th>
+                                    <th>Item Modes</th>
                                     <th>Scheduled Date</th>
                                     <th>Scheduled Start Time & End Time</th>
                                     <th>Actual Start Time & End Time</th>
@@ -163,19 +158,20 @@ const AppointmentReport = () => {
                                         <td>${appointment.tokenNo}</td>
                                         <td>${appointment.customerName}</td>
                                         <td>${appointment.contactNo}</td>
-                                        <td>${appointment.employee?.callingName}</td>
-                                        <td>${appointment.secondaryEmployee?.callingName}</td>
-                                        <td>${appointment.location.name}</td>
+                                        <td>${appointment.employeeName ?? ''}</td>
+                                        <td>${appointment.secondaryEmployeeName ?? ''}</td>
+                                        <td>${appointment.locationName ?? ''}</td>
                                         <td>
-                                            ${appointment.appointmentTreatments.map(treatment => treatment.treatmentType.name).join(', ')}
+                                            ${(appointment.treatmentTypes || []).join(', ')}
                                         </td>
+                                        <td>${(appointment.itemModes || []).join(', ')}</td>
                                         <td>${appointment.scheduleDate.split('T')[0]}</td>
                                         <td>${appointment.fromTime} - ${appointment.toTime}</td>
                                         <td>${appointment.actualFromTime ? `${appointment.actualFromTime} - ${appointment.actualToTime}` : ''}</td>
                                         <td>${appointment.actualFromTime && appointment.actualToTime ? calculateDuration(appointment.actualFromTime, appointment.actualToTime) : '0h:0m'}</td>
                                         <td>${appointment.remarks}</td>
                                         <td>${appointment.tokenIssueTime ? formatDateTime(appointment.tokenIssueTime) : ''}</td>
-                                        <td>${appointment.enteredByEmployee.callingName}</td>
+                                        <td>${appointment.enteredByName ?? ''}</td>
                                         <td>${appointment.enteredDate ? formatDateTime(appointment.enteredDate) : ''}</td>
                                     </tr>
                                 `).join('')}
@@ -194,17 +190,18 @@ const AppointmentReport = () => {
             TokenNumber: appointment.tokenNo,
             CustomerName: appointment.customerName,
             ContactNo: appointment.contactNo,
-            Employee: appointment.employee?.callingName,
-            SecondaryEmployee: appointment.secondaryEmployee?.callingName,
-            Location: appointment.location.name,
-            TreatmentTypes: appointment.appointmentTreatments.map(treatment => treatment.treatmentType.name).join(', '),
+            Employee: appointment.employeeName,
+            SecondaryEmployee: appointment.secondaryEmployeeName,
+            Location: appointment.locationName,
+            TreatmentTypes: (appointment.treatmentTypes || []).join(', '),
+            ItemModes: (appointment.itemModes || []).join(', '),
             ScheduledDate: appointment.scheduleDate.split('T')[0],
             ScheduledTime: `${appointment.fromTime} - ${appointment.toTime}`,
             ActualTime: appointment.actualFromTime ? `${appointment.actualFromTime} - ${appointment.actualToTime}` : null,
             Duration: appointment.actualFromTime && appointment.actualToTime ? calculateDuration(appointment.actualFromTime, appointment.actualToTime) : '0h:0m',
             Remarks: appointment.remarks,
             TokenIssuedDateTime: appointment.tokenIssueTime ? formatDateTime(appointment.tokenIssueTime) : null,
-            EnteredBy: appointment.enteredByEmployee.callingName,
+            EnteredBy: appointment.enteredByName,
             EnteredDateTime: appointment.enteredDate ? formatDateTime(appointment.enteredDate) : null
         })));
 
@@ -281,6 +278,7 @@ const AppointmentReport = () => {
                             <th>Secondary Employee</th>
                             <th>Location</th>
                             <th>Treatment Types</th>
+                            <th>Item Modes</th>
                             <th>Scheduled Date</th>
                             <th>Scheduled Start Time & End Time</th>
                             <th>Actual Start Time & End Time</th>
@@ -293,23 +291,22 @@ const AppointmentReport = () => {
                     </thead>
                     <tbody>
                         {filteredAppointments.map(appointment => (
-                            <tr key={appointment.tokenNo}>
+                            <tr key={appointment.id}>
                                 <td>{appointment.tokenNo}</td>
                                 <td>{appointment.customerName}</td>
                                 <td>{appointment.contactNo}</td>
-                                <td>{appointment.employee?.callingName}</td>
-                                <td>{appointment.secondaryEmployee?.callingName}</td>
-                                <td>{appointment.location.name}</td>
-                                <td>
-                                    {appointment.appointmentTreatments.map(treatment => treatment.treatmentType.name).join(', ')}
-                                </td>
+                                <td>{appointment.employeeName}</td>
+                                <td>{appointment.secondaryEmployeeName}</td>
+                                <td>{appointment.locationName}</td>
+                                <td>{(appointment.treatmentTypes || []).join(', ')}</td>
+                                <td>{(appointment.itemModes || []).join(', ')}</td>
                                 <td>{appointment.scheduleDate.split('T')[0]}</td>
                                 <td>{appointment.fromTime} - {appointment.toTime}</td>
                                 <td>{appointment.actualFromTime ? `${appointment.actualFromTime} - ${appointment.actualToTime}` : ''}</td>
                                 <td>{appointment.actualFromTime && appointment.actualToTime ? calculateDuration(appointment.actualFromTime, appointment.actualToTime) : '0h:0m'}</td>
                                 <td>{appointment.remarks}</td>
                                 <td>{appointment.tokenIssueTime ? formatDateTime(appointment.tokenIssueTime) : ''}</td>
-                                <td>{appointment.enteredByEmployee.callingName}</td>
+                                <td>{appointment.enteredByName}</td>
                                 <td>{appointment.enteredDate ? formatDateTime(appointment.enteredDate) : ''}</td>
                             </tr>
                         ))}
